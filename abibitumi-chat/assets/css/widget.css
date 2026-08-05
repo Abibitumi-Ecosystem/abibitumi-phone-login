@@ -53,6 +53,18 @@
 #abchat-root[data-position="left"] .abchat-greeting { right: auto; left: 0; }
 .abchat-greeting.abchat-fade { opacity: 0; }
 
+/* Proactive rule bubble: the greeting plus quick-reply buttons */
+.abchat-proactive { max-width: 300px; cursor: default; padding-right: 26px; }
+.abchat-proactive .abchat-greeting-text { cursor: pointer; }
+.abchat-proactive-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.abchat-proactive-actions .abchat-quick-btn { font-size: 12px; padding: 6px 10px; }
+.abchat-proactive-close {
+	position: absolute; top: 4px; right: 6px; padding: 2px 4px;
+	background: none; border: 0; color: #8a8a8a;
+	font-size: 16px; line-height: 1; cursor: pointer;
+}
+.abchat-proactive-close:hover { color: #333; }
+
 /* Panel */
 .abchat-panel {
 	position: absolute; bottom: 76px; right: 0;

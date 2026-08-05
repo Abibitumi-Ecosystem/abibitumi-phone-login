@@ -94,6 +94,11 @@ class ABChat_Settings {
 			'bot_rate_limit'     => 10,
 			'bot_rate_window'    => 60,
 
+			// Proactive page rules (self-hosted replacement for Tidio Flows).
+			'proactive_enabled'  => 1,
+			'proactive_rules'    => ABChat_Proactive::default_rules(),
+			'proactive_max_per_session' => 2,
+
 			// Notifications.
 			'notify_email'       => get_option( 'admin_email' ),
 			'notify_new_chat'    => 1,
@@ -291,6 +296,8 @@ class ABChat_Settings {
 			'offlineMessage'  => $s['offline_message'],
 			'pushEnabled'     => (bool) $s['push_enabled'],
 			'pwaEnabled'      => (bool) $s['pwa_enabled'],
+			'proactiveEnabled' => (bool) $s['proactive_enabled'],
+			'proactiveMaxPerSession' => max( 1, (int) $s['proactive_max_per_session'] ),
 			'journeyTracking' => (bool) $s['journey_tracking'],
 		);
 	}

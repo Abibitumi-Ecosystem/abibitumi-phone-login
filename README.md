@@ -4,7 +4,7 @@ WordPress plugin providing OTP-based phone authentication for BuddyBoss/BuddyPre
 
 ## Current Versions
 - Phone Login: v1.1.3
-- Abibitumi Chat companion plugin: v1.1.1
+- Abibitumi Chat companion plugin: v1.2.0
 
 ## Phone Login Features
 - OTP phone login for BuddyBoss/BuddyPress
@@ -44,6 +44,9 @@ decadeofourrepatriation.com. Branding, colours, copy, bot flows, departments,
 and PWA names are per-site settings and can be applied from bundled presets.
 
 The plugin includes:
+
+- page-aware proactive rules that greet visitors with the right message for the
+  page they are on — the self-hosted replacement for Tidio Flows
 - REST polling with optional Server-Sent Events fallback behavior
 - optional Gemini chatbot backend with rule-engine fallback
 - Web Push support through Composer production dependencies

@@ -82,6 +82,13 @@ class ABChat_Plugin {
 	public $retention;
 
 	/**
+	 * Proactive page rules engine.
+	 *
+	 * @var ABChat_Proactive
+	 */
+	public $proactive;
+
+	/**
 	 * Boot.
 	 */
 	public function __construct() {
@@ -97,6 +104,7 @@ class ABChat_Plugin {
 		$this->privacy       = new ABChat_Privacy();
 		$this->web_push      = new ABChat_Web_Push();
 		$this->retention     = new ABChat_Retention();
+		$this->proactive     = new ABChat_Proactive();
 
 		$this->rest->init();
 		$this->widget->init();
@@ -107,6 +115,7 @@ class ABChat_Plugin {
 		$this->privacy->init();
 		$this->web_push->init();
 		$this->retention->init();
+		$this->proactive->init();
 
 		if ( is_admin() ) {
 			$this->admin->init();

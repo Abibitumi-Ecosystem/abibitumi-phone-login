@@ -234,6 +234,8 @@ class ABChat_Admin {
 			'stream_duration'     => max( 10, min( 60, absint( isset( $in['stream_duration'] ) ? $in['stream_duration'] : 25 ) ) ),
 			'transcript_email'    => $checkbox( 'transcript_email' ),
 			'journey_tracking'    => $checkbox( 'journey_tracking' ),
+			'proactive_enabled'   => $checkbox( 'proactive_enabled' ),
+			'proactive_max_per_session' => max( 1, min( 10, absint( isset( $in['proactive_max_per_session'] ) ? $in['proactive_max_per_session'] : 2 ) ) ),
 			'journey_limit'       => max( 5, min( 100, absint( isset( $in['journey_limit'] ) ? $in['journey_limit'] : 20 ) ) ),
 			'retention_enabled'   => $checkbox( 'retention_enabled' ),
 			'retention_days'      => max( 1, absint( isset( $in['retention_days'] ) ? $in['retention_days'] : 365 ) ),
@@ -334,6 +336,22 @@ class ABChat_Admin {
 			}
 		}
 		$values['knowledge_base'] = $articles;
+
+		// Proactive page rules are edited as JSON so the whole rule set stays
+		// portable between sites. Invalid JSON is rejected, never saved blind.
+		if ( isset( $in['proactive_rules_json'] ) ) {
+			$json = trim( (string) $in['proactive_rules_json'] );
+			if ( '' === $json ) {
+				$values['proactive_rules'] = array();
+			} else {
+				$decoded = json_decode( $json, true );
+				if ( is_array( $decoded ) ) {
+					$values['proactive_rules'] = ABChat_Proactive::sanitize_rules( $decoded );
+				} else {
+					set_transient( 'abchat_proactive_json_error', 1, MINUTE_IN_SECONDS );
+				}
+			}
+		}
 
 		ABChat_Settings::update( $values );
 

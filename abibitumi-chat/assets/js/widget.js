@@ -27,6 +27,11 @@
 	var humanJoined = false;
 	var audioCtx = null;
 	var lastTrackedUrl = '';
+	var proRule    = null;   // proactive rule armed for this page
+	var proTimer   = null;
+	var proShown   = {};     // ruleId -> { freq, at, url, session }
+	var proFired   = 0;      // rules fired since page load
+	var proLastUrl = '';
 
 	/* ------------------------------------------------------------------ */
 	/* Sound — short Web Audio beep (no binary asset required)            */
@@ -58,12 +63,13 @@
 			convo = s.convo || null;
 			lastId = s.lastId || 0;
 			seenIntro = !! s.seenIntro;
+			proShown = ( s.proShown && 'object' === typeof s.proShown ) ? s.proShown : {};
 		} catch ( e ) {}
 	}
 	function save() {
 		try {
 			localStorage.setItem( STORE, JSON.stringify( {
-				token: token, convo: convo, lastId: lastId, seenIntro: seenIntro
+				token: token, convo: convo, lastId: lastId, seenIntro: seenIntro, proShown: proShown
 			} ) );
 		} catch ( e ) {}
 	}
@@ -559,6 +565,187 @@
 	}
 
 	/* ------------------------------------------------------------------ */
+	/* Proactive page rules (self-hosted replacement for Tidio Flows)     */
+	/* ------------------------------------------------------------------ */
+	function sessionId() {
+		var id = '';
+		try {
+			id = sessionStorage.getItem( 'abchat_sid' ) || '';
+			if ( ! id ) {
+				id = String( Date.now() ) + '-' + Math.random().toString( 36 ).slice( 2, 8 );
+				sessionStorage.setItem( 'abchat_sid', id );
+			}
+		} catch ( e ) {}
+		return id;
+	}
+
+	/* Rules whose frequency cap has not expired yet - the server is told so
+	   it can skip them and offer the next best match instead. */
+	function suppressedRuleIds() {
+		var out = [], now = Date.now(), id, rec;
+		for ( id in proShown ) {
+			if ( ! Object.prototype.hasOwnProperty.call( proShown, id ) ) { continue; }
+			rec = proShown[ id ] || {};
+			if ( 'once_ever' === rec.freq ) {
+				out.push( id );
+			} else if ( 'once_per_day' === rec.freq && ( now - ( rec.at || 0 ) ) < 86400000 ) {
+				out.push( id );
+			} else if ( 'once_per_session' === rec.freq && rec.session === sessionId() ) {
+				out.push( id );
+			} else if ( 'once_per_page' === rec.freq && rec.url === location.href ) {
+				out.push( id );
+			}
+		}
+		return out;
+	}
+
+	function rememberRule( rule ) {
+		proShown[ rule.id ] = { freq: rule.frequency, at: Date.now(), url: location.href, session: sessionId() };
+		var keys = Object.keys( proShown );
+		if ( keys.length > 40 ) { delete proShown[ keys[0] ]; }
+		save();
+	}
+
+	function clearProactive() {
+		if ( proTimer ) { clearTimeout( proTimer ); proTimer = null; }
+		document.removeEventListener( 'mouseout', onExitIntent );
+		window.removeEventListener( 'scroll', onScrollIntent );
+		proRule = null;
+	}
+
+	function startProactive() {
+		if ( ! CFG.proactiveEnabled ) { maybeGreet(); return; }
+		proLastUrl = location.href;
+		armProactive();
+		// Re-evaluate on client-side navigation (BuddyBoss moves a lot of pages).
+		setInterval( function () {
+			if ( proLastUrl !== location.href ) {
+				proLastUrl = location.href;
+				armProactive();
+			}
+		}, 1500 );
+	}
+
+	function armProactive() {
+		clearProactive();
+		if ( ! token || isOpen || humanJoined ) { return; }
+		if ( proFired >= ( CFG.proactiveMaxPerSession || 2 ) ) { return; }
+		api( '/proactive', { method: 'POST', body: { url: location.href, title: document.title, shown: suppressedRuleIds() } } )
+			.then( function ( res ) {
+				if ( ! res || ! res.rule ) { maybeGreet(); return; }
+				proRule = res.rule;
+				armTrigger( proRule );
+			} )
+			.catch( function () {} );
+	}
+
+	function noHover() {
+		return !! ( window.matchMedia && window.matchMedia( '(hover: none)' ).matches );
+	}
+
+	function armTrigger( rule ) {
+		var delay = Math.max( 0, parseInt( rule.delay, 10 ) || 0 );
+		if ( 'exit_intent' === rule.trigger && ! noHover() ) {
+			document.addEventListener( 'mouseout', onExitIntent );
+			return;
+		}
+		if ( 'scroll' === rule.trigger ) {
+			window.addEventListener( 'scroll', onScrollIntent );
+			return;
+		}
+		if ( 'exit_intent' === rule.trigger ) {
+			delay = delay || 45; // Touch devices have no exit intent; dwell instead.
+		}
+		proTimer = setTimeout( fireProactive, ( delay || 3 ) * 1000 );
+	}
+
+	function onExitIntent( e ) {
+		if ( e && ( e.relatedTarget || e.toElement ) ) { return; }
+		if ( e && 'number' === typeof e.clientY && e.clientY > 12 ) { return; }
+		fireProactive();
+	}
+
+	function onScrollIntent() {
+		if ( ! proRule ) { return; }
+		var doc    = document.documentElement;
+		var height = ( doc.scrollHeight - doc.clientHeight ) || 1;
+		var pct    = ( ( window.pageYOffset || doc.scrollTop || 0 ) / height ) * 100;
+		if ( pct >= ( proRule.scroll || 50 ) ) { fireProactive(); }
+	}
+
+	function fireProactive() {
+		var rule = proRule;
+		clearProactive();
+		if ( ! rule || isOpen || humanJoined ) { return; }
+		proFired++;
+		seenIntro = true;
+		rememberRule( rule );
+		showProactive( rule );
+	}
+
+	function showProactive( rule ) {
+		var bubble = el( 'div', 'abchat-greeting abchat-proactive' );
+		var text   = el( 'div', 'abchat-greeting-text', esc( rule.message ) );
+		bubble.appendChild( text );
+		text.addEventListener( 'click', function () {
+			bubble.remove();
+			engageProactive( rule, null );
+		} );
+
+		if ( rule.quickReplies && rule.quickReplies.length ) {
+			var acts = el( 'div', 'abchat-proactive-actions' );
+			rule.quickReplies.forEach( function ( q ) {
+				var b = el( 'button', 'abchat-quick-btn', esc( q.label ) );
+				b.addEventListener( 'click', function ( ev ) {
+					ev.stopPropagation();
+					bubble.remove();
+					engageProactive( rule, q );
+				} );
+				acts.appendChild( b );
+			} );
+			bubble.appendChild( acts );
+		}
+
+		var close = el( 'button', 'abchat-proactive-close', '&times;' );
+		close.setAttribute( 'aria-label', I18N.close || 'Close' );
+		close.addEventListener( 'click', function ( ev ) {
+			ev.stopPropagation();
+			bubble.remove();
+		} );
+		bubble.appendChild( close );
+
+		root.appendChild( bubble );
+		beep();
+		setTimeout( function () { if ( bubble.parentNode ) { bubble.classList.add( 'abchat-fade' ); } }, 25000 );
+		setTimeout( function () { if ( bubble.parentNode ) { bubble.remove(); } }, 27000 );
+	}
+
+	/* Opening the panel from a proactive bubble: replay the message in the
+	   thread so context is not lost, then let the chatbot answer the click. */
+	function engageProactive( rule, reply ) {
+		api( '/proactive/engaged', { method: 'POST', body: { rule_id: rule.id } } ).catch( function () {} );
+		if ( ! isOpen ) { togglePanel(); }
+
+		var tries = 0;
+		( function waitForConvo() {
+			if ( convo ) {
+				appendMessage( { senderType: 'bot', senderName: CFG.botName, body: rule.message, type: 'text' }, true );
+				if ( reply ) {
+					appendMessage( { senderType: 'visitor', body: reply.label, type: 'text' }, true );
+					api( '/bot', { method: 'POST', body: { conversation_id: convo, flow_id: reply.id, text: reply.label } } )
+						.then( function () { poll(); } )
+						.catch( function () {} );
+				} else if ( rule.quickReplies && rule.quickReplies.length ) {
+					renderQuickReplies( rule.quickReplies );
+				}
+				return;
+			}
+			if ( ++tries > 60 ) { return; } // Visitor never finished the pre-chat form.
+			setTimeout( waitForConvo, 500 );
+		} )();
+	}
+
+	/* ------------------------------------------------------------------ */
 	/* PWA service worker (visitor side is optional)                      */
 	/* ------------------------------------------------------------------ */
 	function registerSW() {
@@ -576,7 +763,7 @@
 		if ( ! root ) { return; }
 		startSession().then( function () {
 			watchJourney();
-			maybeGreet();
+			startProactive();
 			// Background poll for unread even when closed, at a slower cadence.
 			if ( convo ) {
 				setInterval( function () { if ( ! isOpen ) { poll(); } }, ( CFG.pollInterval || 4 ) * 3000 );

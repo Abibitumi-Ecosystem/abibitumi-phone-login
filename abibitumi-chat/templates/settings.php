@@ -349,6 +349,70 @@ $checkbox = function ( $name, $val, $label ) {
 
 		<!-- Notifications & PWA -->
 		<div class="abchat-section">
+			<h2><?php esc_html_e( 'Proactive page rules', 'abibitumi-chat' ); ?></h2>
+			<?php if ( get_transient( 'abchat_proactive_json_error' ) ) : ?>
+				<?php delete_transient( 'abchat_proactive_json_error' ); ?>
+				<div class="notice notice-error inline">
+					<p><?php esc_html_e( 'Those rules were not valid JSON, so nothing was changed. The previous rules are still live.', 'abibitumi-chat' ); ?></p>
+				</div>
+			<?php endif; ?>
+			<table class="form-table" role="presentation">
+				<tr>
+					<th><?php esc_html_e( 'Proactive messages', 'abibitumi-chat' ); ?></th>
+					<td>
+						<?php $checkbox( 'proactive_enabled', $s['proactive_enabled'], __( 'Greet visitors with the rule that matches the page they are on', 'abibitumi-chat' ) ); ?>
+						<p class="description"><?php esc_html_e( 'When no rule matches the page, the plain welcome bubble is used instead.', 'abibitumi-chat' ); ?></p>
+						<label><input name="proactive_max_per_session" type="number" min="1" max="10" value="<?php echo esc_attr( $s['proactive_max_per_session'] ); ?>"> <?php esc_html_e( 'maximum proactive messages per visit', 'abibitumi-chat' ); ?></label>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="proactive_rules_json"><?php esc_html_e( 'Rules (JSON)', 'abibitumi-chat' ); ?></label></th>
+					<td>
+						<textarea name="proactive_rules_json" id="proactive_rules_json" rows="18" class="large-text code" spellcheck="false"><?php echo esc_textarea( wp_json_encode( (array) $s['proactive_rules'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) ); ?></textarea>
+						<p class="description">
+							<?php esc_html_e( 'One object per rule. Keys: id, enabled, name, match (URL patterns, * allowed), exclude, audience (all|new|returning|logged_in|logged_out), trigger (page_open|dwell|scroll|exit_intent), delay in seconds, scroll percent, frequency (always|once_per_page|once_per_session|once_per_day|once_ever), priority, message, quick_replies.', 'abibitumi-chat' ); ?>
+							<br>
+							<?php esc_html_e( 'A quick reply with an answer becomes its own bot flow; one with only an id points at a flow configured above. Set handoff to 1 to route straight to a person.', 'abibitumi-chat' ); ?>
+						</p>
+					</td>
+				</tr>
+				<tr>
+					<th><?php esc_html_e( 'Performance', 'abibitumi-chat' ); ?></th>
+					<td>
+						<?php $pro_stats = ABChat_Proactive::stats(); ?>
+						<?php if ( empty( $pro_stats ) ) : ?>
+							<p class="description"><?php esc_html_e( 'No rules configured yet.', 'abibitumi-chat' ); ?></p>
+						<?php else : ?>
+							<table class="widefat striped" style="max-width:640px;">
+								<thead>
+									<tr>
+										<th><?php esc_html_e( 'Rule', 'abibitumi-chat' ); ?></th>
+										<th><?php esc_html_e( 'Shown', 'abibitumi-chat' ); ?></th>
+										<th><?php esc_html_e( 'Replied', 'abibitumi-chat' ); ?></th>
+										<th><?php esc_html_e( 'Engagement', 'abibitumi-chat' ); ?></th>
+									</tr>
+								</thead>
+								<tbody>
+									<?php foreach ( $pro_stats as $pro_row ) : ?>
+										<tr>
+											<td>
+												<?php echo esc_html( $pro_row['name'] ); ?>
+												<?php if ( empty( $pro_row['enabled'] ) ) : ?>
+													<em>(<?php esc_html_e( 'off', 'abibitumi-chat' ); ?>)</em>
+												<?php endif; ?>
+											</td>
+											<td><?php echo (int) $pro_row['served']; ?></td>
+											<td><?php echo (int) $pro_row['engaged']; ?></td>
+											<td><?php echo esc_html( $pro_row['engagement'] ); ?>%</td>
+										</tr>
+									<?php endforeach; ?>
+								</tbody>
+							</table>
+						<?php endif; ?>
+					</td>
+				</tr>
+			</table>
+
 			<h2><?php esc_html_e( 'Notifications & PWA', 'abibitumi-chat' ); ?></h2>
 			<table class="form-table" role="presentation">
 				<tr>

@@ -3,7 +3,7 @@
  * Plugin Name:       Abibitumi Chat
  * Plugin URI:        https://abibitumi.com/
  * Description:       Self-hosted live chat, chatbots, ticketing, and visitor tracking — a full Tidio replacement for WordPress/BuddyBoss. Web first, PWA ready.
- * Version:           1.1.1
+ * Version:           1.2.0
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            Abibitumi
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'ABCHAT_VERSION', '1.1.1' );
+define( 'ABCHAT_VERSION', '1.2.0' );
 define( 'ABCHAT_FILE', __FILE__ );
 define( 'ABCHAT_DIR', plugin_dir_path( __FILE__ ) );
 define( 'ABCHAT_URL', plugin_dir_url( __FILE__ ) );
@@ -38,6 +38,7 @@ if ( ! defined( 'ABCHAT_AGENT_CAP' ) ) {
 
 require_once ABCHAT_DIR . 'includes/class-abchat-db.php';
 require_once ABCHAT_DIR . 'includes/class-abchat-settings.php';
+require_once ABCHAT_DIR . 'includes/class-abchat-proactive.php';
 require_once ABCHAT_DIR . 'includes/class-abchat-presets.php';
 require_once ABCHAT_DIR . 'includes/class-abchat-retention.php';
 require_once ABCHAT_DIR . 'includes/class-abchat-activator.php';

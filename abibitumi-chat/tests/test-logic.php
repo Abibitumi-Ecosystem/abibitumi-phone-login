@@ -94,6 +94,7 @@ class ABChat_DB {
 }
 
 require __DIR__ . '/../includes/class-abchat-settings.php';
+require __DIR__ . '/../includes/class-abchat-proactive.php';
 require __DIR__ . '/../includes/class-abchat-chatbot.php';
 require __DIR__ . '/../includes/class-abchat-gemini.php';
 require __DIR__ . '/../includes/class-abchat-rest.php';
@@ -384,6 +385,99 @@ ok( ! isset( $decoded['gemini_api_key'] ), 'export omits Gemini API key' );
 ABChat_Settings::update( array( 'brand_name' => 'Changed' ) );
 ABChat_Presets::import( $decoded );
 ok( ABChat_Settings::get( 'brand_name' ) === 'Abibitumi', 'import restores exported brand name' );
+
+echo "== Proactive page rules ==\n";
+ABChat_Settings::update( ABChat_Settings::defaults() );
+
+$rules = ABChat_Proactive::default_rules();
+ok( count( $rules ) === 4, 'four starter proactive rules' );
+
+ok( ABChat_Proactive::url_matches( 'https://abibitumi.com/product/twi-class/', array( '*/product/*' ) ), 'glob matches a product page' );
+ok( ! ABChat_Proactive::url_matches( 'https://abibitumi.com/newsfeed/', array( '*/product/*' ) ), 'glob rejects an unrelated page' );
+ok( ABChat_Proactive::url_matches( 'https://abibitumi.com/onimerindinlogun-course-access/', array( 'course-access' ) ), 'bare pattern matches as substring' );
+ok( ! ABChat_Proactive::url_matches( 'https://abibitumi.com/product/hoodie/', array( '*/product/*' ), array( '*hoodie*' ) ), 'exclude pattern wins over include' );
+ok( ABChat_Proactive::url_matches( 'https://abibitumi.com/anything/', array() ), 'empty include list means site-wide' );
+ok( ABChat_Proactive::url_matches( 'HTTPS://Abibitumi.com/Product/Twi/', array( '*/product/*' ) ), 'matching ignores case and scheme' );
+
+// Highest priority wins, and audience gates work.
+$match = ABChat_Proactive::match_rule( 'https://abibitumi.com/product/hoodie/', array( 'returning' => true ) );
+ok( $match && 'product-purchase-help' === $match['id'], 'product page picks the purchase-help rule' );
+
+$match = ABChat_Proactive::match_rule( 'https://abibitumi.com/checkout/', array( 'returning' => true ) );
+ok( $match && 'checkout-rescue' === $match['id'], 'checkout picks the higher-priority rescue rule' );
+ok( $match && 'exit_intent' === $match['trigger'], 'rescue rule fires on exit intent' );
+
+$match = ABChat_Proactive::match_rule( 'https://abibitumi.com/newsfeed/', array( 'returning' => true ) );
+ok( null === $match, 'returning visitors skip the new-visitor orientation' );
+
+$match = ABChat_Proactive::match_rule( 'https://abibitumi.com/newsfeed/', array( 'returning' => false ) );
+ok( $match && 'first-visit-orientation' === $match['id'], 'new visitors get the orientation rule' );
+
+$match = ABChat_Proactive::match_rule( 'https://abibitumi.com/product/hoodie/', array( 'returning' => true, 'shown_ids' => array( 'product-purchase-help' ) ) );
+ok( null === $match, 'a rule already shown is not served again' );
+
+// Disabled globally.
+ABChat_Settings::update( array( 'proactive_enabled' => 0 ) );
+ok( null === ABChat_Proactive::match_rule( 'https://abibitumi.com/product/hoodie/' ), 'no rules while proactive messaging is off' );
+ABChat_Settings::update( array( 'proactive_enabled' => 1 ) );
+
+// Sanitising rejects junk and clamps values.
+$clean = ABChat_Proactive::sanitize_rules(
+	array(
+		array( 'label' => 'no id here' ),
+		array(
+			'id'            => 'Test-Rule',
+			'trigger'       => 'telepathy',
+			'audience'      => 'nobody',
+			'frequency'     => 'hourly',
+			'delay'         => 9999,
+			'scroll'        => 0,
+			'match'         => "*/one/*\n*/two/*",
+			'message'       => 'Hello',
+			'quick_replies' => array(
+				array( 'label' => 'Help', 'handoff' => 1 ),
+				array( 'label' => '' ),
+			),
+		),
+		array( 'id' => 'test-rule', 'message' => 'duplicate id' ),
+	)
+);
+ok( count( $clean ) === 1, 'rules without an id and duplicate ids are dropped' );
+ok( 'test-rule' === $clean[0]['id'], 'rule ids are lower-cased into keys' );
+ok( 'dwell' === $clean[0]['trigger'], 'unknown trigger falls back to dwell' );
+ok( 'all' === $clean[0]['audience'], 'unknown audience falls back to all' );
+ok( 'once_per_day' === $clean[0]['frequency'], 'unknown frequency falls back to once per day' );
+ok( 600 === $clean[0]['delay'], 'delay is clamped to ten minutes' );
+ok( 1 === $clean[0]['scroll'], 'scroll depth is clamped to at least one percent' );
+ok( count( $clean[0]['match'] ) === 2, 'newline separated patterns are split' );
+ok( count( $clean[0]['quick_replies'] ) === 1, 'quick replies without a label are dropped' );
+ok( '__HANDOFF__' === $clean[0]['quick_replies'][0]['answer'], 'handoff quick replies route to a person' );
+
+// Quick replies become answerable bot flows.
+ABChat_Settings::update( array( 'proactive_rules' => ABChat_Proactive::default_rules() ) );
+$flows = ABChat_Proactive::inject_quick_reply_flows( ABChat_Settings::get( 'bot_flows' ) );
+$ids   = array();
+foreach ( $flows as $flow ) {
+	$ids[ $flow['id'] ] = true;
+}
+ok( isset( $ids['pr_how_to_buy'] ), 'proactive quick reply exposed as a bot flow' );
+ok( isset( $ids['pr_orientation_human'] ), 'handoff quick replies are exposed as flows too' );
+ok( isset( $ids['pricing'] ), 'existing flows survive the merge' );
+ok( count( $flows ) > count( ABChat_Settings::get( 'bot_flows' ) ), 'flow list grows, nothing is replaced' );
+
+// Counters power the admin performance table.
+ABChat_Proactive::bump( 'product-purchase-help', 'served' );
+ABChat_Proactive::bump( 'product-purchase-help', 'served' );
+ABChat_Proactive::bump( 'product-purchase-help', 'engaged' );
+ABChat_Proactive::bump( 'product-purchase-help', 'nonsense' );
+$stats = ABChat_Proactive::stats();
+$row   = null;
+foreach ( $stats as $candidate ) {
+	if ( 'product-purchase-help' === $candidate['id'] ) { $row = $candidate; }
+}
+ok( $row && 2 === $row['served'], 'served counter increments' );
+ok( $row && 1 === $row['engaged'], 'engaged counter increments' );
+ok( $row && 50.0 === $row['engagement'], 'engagement percentage calculated' );
 
 echo "\n== RESULT: $pass passed, $fail failed ==\n";
 exit( $fail ? 1 : 0 );

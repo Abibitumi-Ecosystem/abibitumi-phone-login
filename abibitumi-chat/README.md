@@ -47,6 +47,30 @@ relevant purchase or onboarding next step without guessing what the visitor
 has viewed. Journey data participates in WordPress privacy export, erasure, and
 retention cleanup.
 
+### Proactive page rules (the Tidio Flows replacement)
+
+Instead of one generic greeting, the widget asks the server which rule applies
+to the page the visitor is on. A rule is matched on URL patterns, audience (all,
+new, returning, logged in, logged out) and optionally office hours, then fires on
+page open, dwell time, scroll depth or exit intent. Only the winning rule is sent
+to the browser, so copy written for checkout is never shipped to a blog reader.
+
+Each rule carries a message and up to four quick replies. A quick reply that has
+its own answer is registered as a bot flow through the `abchat_bot_flows` filter,
+so clicking it is answered by the existing chatbot; a quick reply with only an id
+points at a flow already configured under Chatbot. Setting `handoff` routes the
+visitor straight to a person.
+
+Frequency caps (`always`, `once_per_page`, `once_per_session`, `once_per_day`,
+`once_ever`) are enforced in the browser and again server-side with transients,
+and `proactive_max_per_session` caps how many rules a single visit can see.
+Rules are edited as JSON under Chat → Settings → Proactive page rules, where a
+shown/replied/engagement table shows which ones actually earn conversations.
+
+Starter rules cover product pages (purchase help), cart and checkout (exit-intent
+rescue), course access pages (login and session-link help), and first-time
+visitors (orientation).
+
 ## Architecture
 
 ```
@@ -170,6 +194,10 @@ confirming that `REMOTE_ADDR` belongs to that trusted proxy.
 ## Extending
 - `abchat_bot_response` (filter) — return a string or
   `{ reply, quickReplies, handoff }` to swap the rule engine for an LLM.
+- `abchat_bot_flows` (filter) — add or replace the flows the bot answers from.
+- `abchat_proactive_rules` (filter) — adjust the rule set before matching.
+- `abchat_proactive_match` (filter) — override which rule wins for a page view.
+- `abchat_proactive_served` (action) — fires when a rule is sent to a visitor.
 - `abchat_should_load_widget` (filter) — control where the widget appears.
 - `abchat_dispatch_push` (action) — receives push subscriptions and payloads.
   The Composer integration delivers them through `minishlink/web-push`;

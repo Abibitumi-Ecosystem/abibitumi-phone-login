@@ -84,6 +84,16 @@ class ABChat_REST {
 			'callback'            => array( $this, 'page_view' ),
 			'permission_callback' => $visitor,
 		) );
+		register_rest_route( self::NS, '/proactive', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'proactive' ),
+			'permission_callback' => $visitor,
+		) );
+		register_rest_route( self::NS, '/proactive/engaged', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'proactive_engaged' ),
+			'permission_callback' => $visitor,
+		) );
 
 		// ---- Agent ------------------------------------------------------ //
 		register_rest_route( self::NS, '/agent/conversations', array(
@@ -343,6 +353,78 @@ class ABChat_REST {
 		}
 		$stored  = ABChat_DB::record_page_view( $visitor->id, $req->get_param( 'url' ), $req->get_param( 'title' ) );
 		return new WP_REST_Response( array( 'stored' => $stored ), 200 );
+	}
+
+	/**
+	 * Which proactive rule, if any, applies to the page this visitor is on?
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function proactive( $req ) {
+		$visitor = $req->get_param( '_visitor' );
+		$limited = $this->consume_rate_limit( 'abchat_pro_v_' . (int) $visitor->id, 30, 60, 'abchat_proactive_rate_limited' );
+		if ( is_wp_error( $limited ) ) {
+			return $limited;
+		}
+
+		$shown = $req->get_param( 'shown' );
+		$rule  = ABChat_Proactive::match_rule(
+			$req->get_param( 'url' ),
+			array(
+				'returning' => $this->visitor_is_returning( $visitor ),
+				'logged_in' => is_user_logged_in(),
+				'shown_ids' => is_array( $shown ) ? array_map( 'sanitize_key', $shown ) : array(),
+			)
+		);
+
+		if ( ! $rule || ABChat_Proactive::is_cooling_down( $visitor->id, $rule ) ) {
+			return new WP_REST_Response( array( 'rule' => null ), 200 );
+		}
+
+		ABChat_Proactive::mark_shown( $visitor->id, $rule );
+		ABChat_Proactive::bump( $rule['id'], 'served' );
+
+		/**
+		 * Fires when a proactive rule is served to a visitor.
+		 *
+		 * @param array  $rule    Matched rule.
+		 * @param object $visitor Visitor row.
+		 */
+		do_action( 'abchat_proactive_served', $rule, $visitor );
+
+		return new WP_REST_Response( array( 'rule' => ABChat_Proactive::payload( $rule ) ), 200 );
+	}
+
+	/**
+	 * Record that a visitor acted on a proactive message.
+	 *
+	 * @param WP_REST_Request $req Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function proactive_engaged( $req ) {
+		$visitor = $req->get_param( '_visitor' );
+		$limited = $this->consume_rate_limit( 'abchat_pro_e_' . (int) $visitor->id, 30, 60, 'abchat_proactive_rate_limited' );
+		if ( is_wp_error( $limited ) ) {
+			return $limited;
+		}
+		ABChat_Proactive::bump( (string) $req->get_param( 'rule_id' ), 'engaged' );
+		return new WP_REST_Response( array( 'stored' => true ), 200 );
+	}
+
+	/**
+	 * Best-effort test for a visitor who has been here before.
+	 *
+	 * @param object $visitor Visitor row.
+	 * @return bool
+	 */
+	protected function visitor_is_returning( $visitor ) {
+		if ( ! empty( $visitor->wp_user_id ) ) {
+			return true;
+		}
+		$first = isset( $visitor->first_seen ) ? strtotime( (string) $visitor->first_seen ) : 0;
+		$last  = isset( $visitor->last_seen ) ? strtotime( (string) $visitor->last_seen ) : 0;
+		return ( $first && $last && ( $last - $first ) > ( 30 * MINUTE_IN_SECONDS ) );
 	}
 
 	/**

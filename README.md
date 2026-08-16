@@ -1,57 +1,74 @@
-# Abibitumi Phone Login
+# Abibitumi ID and Phone Login
 
-WordPress plugin providing OTP-based phone authentication for BuddyBoss/BuddyPress platforms.
+WordPress/BuddyBoss identity and login work for Abibitumi properties.
 
-## Current Versions
-- Phone Login: v1.1.3
-- Abibitumi Chat companion plugin: v1.1.1
+This repository is for two closely related authentication concerns:
 
-## Phone Login Features
-- OTP phone login for BuddyBoss/BuddyPress
-- SMS providers: Twilio, Africa's Talking, Vonage
-- Custom DB table for OTP storage
-- bcrypt OTP hashing
-- Layered rate limiting
-- REST API endpoints for mobile
+- **Abibitumi ID** - the identity layer: account identity, verification status,
+  profile truth, roles, capabilities, and future cross-site identity behavior.
+- **Phone Login** - a login method for Abibitumi ID: OTP delivery, verification,
+  account lookup/linking, rate limiting, and mobile/API authentication flows.
 
-## Phone Login Version History
-- v1.0.0 - Initial release
-- v1.1.0 - Added Africa's Talking provider
-- v1.1.1 - bcrypt hashing audit
-- v1.1.2 - Rate limiting layer
-- v1.1.3 - REST API endpoints
+The Tidio chat replacement is a separate product concern and does not belong in
+this repository. It should live in its own repository and integrate with
+Abibitumi ID through explicit hooks or APIs when it needs verified user context.
+
+## Current Scope
+
+- OTP phone login for BuddyBoss/BuddyPress.
+- SMS providers: Twilio, Africa's Talking, Vonage.
+- Custom DB table for OTP storage.
+- bcrypt OTP hashing.
+- Layered rate limiting.
+- REST API endpoints for mobile.
+- Abibitumi ID integration boundary for verified phone/user identity.
+- Ghana-first phone normalization with canonical E.164 storage.
+- Phone-first sign-in UI for shortcode pages and the standard WordPress login
+  screen.
+
+## Layout
+
+Phone login is merged into Abibitumi ID as an internal module:
+
+```text
+plugins/
+  abibitumi-id/
+    abibitumi-id.php
+    includes/
+      identity/
+      phone-login/
+      otp/
+      account-linking/
+```
+
+There is no separate phone-login plugin directory; new phone login work belongs
+inside `plugins/abibitumi-id/`.
+
+## Version History
+
+- Phone Login v1.0.0 - Initial release.
+- Phone Login v1.1.0 - Added Africa's Talking provider.
+- Phone Login v1.1.1 - bcrypt hashing audit.
+- Phone Login v1.1.2 - Rate limiting layer.
+- Phone Login v1.1.3 - REST API endpoints.
 
 ## Installation
-1. Upload plugin folder to `/wp-content/plugins/`.
+
+1. Upload the plugin folder to `/wp-content/plugins/`.
 2. Activate via WordPress admin.
-3. Configure SMS provider credentials in Settings -> Phone Login.
+3. Configure SMS provider credentials in the plugin settings.
+
+## Deployment Artifact
+
+GitHub Actions can build a WordPress-installable ZIP from this repository:
+
+- Run `Package Abibitumi ID` manually in GitHub Actions, or push a tag matching
+  `abibitumi-id-v*`.
+- Download the `abibitumi-id` artifact.
+- Upload `abibitumi-id.zip` through the WordPress plugin installer.
 
 ## Branches
-- `main` - stable/released
-- `dev` - active development
-- `release/*` - release candidates
 
----
-
-## Companion Plugin: Abibitumi Chat (`/abibitumi-chat`)
-
-A self-hosted **Tidio replacement** for the platform: live chat, chatbots,
-ticketing, visitor tracking, canned responses, analytics, Tidio CSV migration,
-and an installable **PWA** for agents. Web-first, then PWA. No third-party SaaS.
-
-Built to be white-labelled across abibitumi.com, repatriatetoghana.com, and
-decadeofourrepatriation.com. Branding, colours, copy, bot flows, departments,
-and PWA names are per-site settings and can be applied from bundled presets.
-
-The plugin includes:
-- REST polling with optional Server-Sent Events fallback behavior
-- optional Gemini chatbot backend with rule-engine fallback
-- Web Push support through Composer production dependencies
-- WordPress privacy export/erasure and retention cleanup
-- Tidio contacts/transcript CSV importer
-- standalone logic tests, browser smoke tests, WordPress integration tests, and CI packaging
-
-See [`abibitumi-chat/README.md`](abibitumi-chat/README.md) for features,
-architecture, installation, deployment, migration notes, and extension points.
-See [`abibitumi-chat/VERIFICATION.md`](abibitumi-chat/VERIFICATION.md) for the
-current release and deployment validation checklist.
+- `main` - stable/released.
+- `dev` - active development.
+- `release/*` - release candidates.

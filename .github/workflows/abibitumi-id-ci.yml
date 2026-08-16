@@ -1,0 +1,39 @@
+name: Abibitumi ID CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - "agent/**"
+
+jobs:
+  plugin-checks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "7.4"
+          coverage: none
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: PHP syntax check
+        run: find plugins/abibitumi-id -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Smoke test admin entitlements
+        run: php tests/smoke/admin-entitlements.php
+
+      - name: Smoke test phone normalization
+        run: php tests/smoke/phone-normalization.php
+
+      - name: JavaScript syntax check
+        run: node --check plugins/abibitumi-id/assets/js/login.js

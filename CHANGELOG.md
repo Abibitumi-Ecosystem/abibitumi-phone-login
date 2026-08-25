@@ -1,22 +1,30 @@
 # Changelog
 
-## Abibitumi Chat
+## Repository
 
-### [1.1.1] - 2026-07-11
-- Added compatibility handling for legacy MySQL `utf8mb3` option tables.
-- Preserves normal Unicode on modern `utf8mb4` sites while omitting unsupported four-byte characters on legacy tables.
-- Ensures activation and preset application can create the settings option.
+### Unreleased
+- Removed the Tidio chat replacement from this repository boundary.
+- Reframed this repository around Abibitumi ID and phone login.
+- Added the initial merged Abibitumi ID plugin foundation with phone OTP login
+  as an internal module.
+- Added BuddyBoss phone profile sync and Better Messages verified-phone trust
+  integration.
+- Added verified-user contact discovery for WhatsApp-style "contacts already on
+  Abibitumi" lookup without storing uploaded contacts.
+- Added optional Abibitumi ID admin entitlements so trusted identities can be
+  granted site administrator access by email alias or verified phone hash.
+- Added a smoke test for admin entitlement alias and phone/hash parsing.
+- Added Ghana-first phone normalization so local Ghana numbers are stored and
+  matched as E.164 numbers.
+- Added a phone-first login UI shortcode, standard WordPress login-screen
+  integration, and app-friendly phone normalization endpoint.
+- Added GitHub Actions checks and packaging for the Abibitumi ID WordPress
+  plugin ZIP.
+- Added Hubtel as the recommended Ghana-first SMS provider.
+- Added Firebase trusted-device push login for repeat sign-in approvals after
+  first phone verification.
 
-### [1.1.0] - 2026-07-11
-- Added Tidio contacts and transcript CSV migration tooling.
-- Added live visitor page journey context for operators and chatbot recommendations.
-- Added privacy export/erasure and retention integration for journey data.
-
-### [1.0.0] - 2026-07-11
-- Added self-hosted Tidio replacement plugin under `abibitumi-chat/`.
-- Includes live chat widget, operator inbox, chatbot flows, file sharing, visitor tracking, analytics, PWA support, Web Push, site presets, and CI packaging.
-
-## Abibitumi Phone Login
+## Phone Login
 
 ### [1.1.3]
 - REST API endpoints for mobile.

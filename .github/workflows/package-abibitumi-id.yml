@@ -1,0 +1,30 @@
+name: Package Abibitumi ID
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "abibitumi-id-v*"
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build WordPress plugin ZIP
+        run: |
+          mkdir -p dist
+          cd plugins
+          zip -r ../dist/abibitumi-id.zip abibitumi-id \
+            -x '*/.DS_Store' \
+            -x '*/node_modules/*' \
+            -x '*/vendor/*'
+
+      - name: Upload plugin artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: abibitumi-id
+          path: dist/abibitumi-id.zip

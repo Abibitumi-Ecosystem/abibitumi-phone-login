@@ -1,0 +1,56 @@
+.abid-login {
+	max-width: 420px;
+	margin: 16px 0;
+	width: 100%;
+}
+
+.abid-login__form {
+	display: grid;
+	gap: 14px;
+}
+
+.abid-login__field {
+	display: grid;
+	gap: 6px;
+}
+
+.abid-login__field label {
+	font-weight: 700;
+}
+
+.abid-login__field input {
+	box-sizing: border-box;
+	font: inherit;
+	min-height: 48px;
+	padding: 10px 12px;
+	width: 100%;
+}
+
+.abid-login__button {
+	cursor: pointer;
+	font: inherit;
+	font-weight: 700;
+	min-height: 48px;
+	padding: 10px 16px;
+	width: 100%;
+}
+
+.abid-login__button:disabled {
+	cursor: wait;
+	opacity: 0.7;
+}
+
+.abid-login__link {
+	background: transparent;
+	border: 0;
+	cursor: pointer;
+	font: inherit;
+	padding: 4px;
+	text-align: left;
+	text-decoration: underline;
+}
+
+.abid-login__status {
+	margin: 0;
+	min-height: 24px;
+}

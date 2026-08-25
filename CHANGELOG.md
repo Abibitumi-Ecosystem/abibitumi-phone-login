@@ -20,6 +20,9 @@
   integration, and app-friendly phone normalization endpoint.
 - Added GitHub Actions checks and packaging for the Abibitumi ID WordPress
   plugin ZIP.
+- Added Hubtel as the recommended Ghana-first SMS provider.
+- Added Firebase trusted-device push login for repeat sign-in approvals after
+  first phone verification.
 
 ## Phone Login
 

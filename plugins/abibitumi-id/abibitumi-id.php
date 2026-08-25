@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'ABID_VERSION', '0.1.0' );
+define( 'ABID_VERSION', '0.2.0' );
 define( 'ABID_FILE', __FILE__ );
 define( 'ABID_DIR', plugin_dir_path( __FILE__ ) );
 define( 'ABID_URL', plugin_dir_url( __FILE__ ) );
@@ -27,6 +27,7 @@ require_once ABID_DIR . 'includes/class-abid-otp-store.php';
 require_once ABID_DIR . 'includes/class-abid-sms.php';
 require_once ABID_DIR . 'includes/class-abid-identity.php';
 require_once ABID_DIR . 'includes/class-abid-phone-login.php';
+require_once ABID_DIR . 'includes/class-abid-push-login.php';
 require_once ABID_DIR . 'includes/class-abid-login-ui.php';
 require_once ABID_DIR . 'includes/class-abid-integrations.php';
 require_once ABID_DIR . 'includes/class-abid-admin-entitlements.php';

@@ -20,6 +20,9 @@ class ABID_SMS {
 		if ( 'africastalking' === $provider ) {
 			return self::africas_talking( $phone, $message );
 		}
+		if ( 'hubtel' === $provider ) {
+			return self::hubtel( $phone, $message );
+		}
 		if ( 'vonage' === $provider ) {
 			return self::vonage( $phone, $message );
 		}
@@ -65,6 +68,37 @@ class ABID_SMS {
 			)
 		);
 		return self::ok_response( $response, 201 );
+	}
+
+	private static function hubtel( $phone, $message ) {
+		$client_id     = ABID_Settings::get( 'hubtel_client_id' );
+		$client_secret = ABID_Settings::get( 'hubtel_client_secret' );
+		$from          = ABID_Settings::get( 'hubtel_from', 'ABIBITUMI' );
+		$endpoint      = ABID_Settings::get( 'hubtel_endpoint', 'https://devp-sms03726-api.hubtel.com/v1/messages/send' );
+
+		if ( ! $client_id || ! $client_secret || ! $from ) {
+			return new WP_Error( 'abid_hubtel_unconfigured', __( 'Hubtel is not configured.', 'abibitumi-id' ) );
+		}
+
+		$response = wp_remote_post(
+			esc_url_raw( $endpoint ),
+			array(
+				'headers' => array(
+					'Authorization' => 'Basic ' . base64_encode( $client_id . ':' . $client_secret ),
+					'Content-Type'  => 'application/json',
+					'Accept'        => 'application/json',
+				),
+				'body'    => wp_json_encode(
+					array(
+						'from'    => $from,
+						'to'      => ABID_OTP_Store::normalize_phone( $phone ),
+						'content' => $message,
+					)
+				),
+				'timeout' => 15,
+			)
+		);
+		return self::ok_response( $response, 200 );
 	}
 
 	private static function vonage( $phone, $message ) {

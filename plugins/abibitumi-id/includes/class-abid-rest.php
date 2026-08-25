@@ -68,6 +68,56 @@ class ABID_REST {
 		);
 		register_rest_route(
 			self::NS,
+			'/push/device',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'push_device' ),
+				'permission_callback' => array( $this, 'can_register_push_device' ),
+				'args'                => array(
+					'token'       => array( 'required' => true, 'type' => 'string' ),
+					'device_name' => array( 'required' => false, 'type' => 'string' ),
+				),
+			)
+		);
+		register_rest_route(
+			self::NS,
+			'/push/start',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'push_start' ),
+				'permission_callback' => '__return_true',
+				'args'                => array(
+					'phone' => array( 'required' => true, 'type' => 'string' ),
+				),
+			)
+		);
+		register_rest_route(
+			self::NS,
+			'/push/approve',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'push_approve' ),
+				'permission_callback' => array( $this, 'can_register_push_device' ),
+				'args'                => array(
+					'challenge_id' => array( 'required' => true, 'type' => 'string' ),
+				),
+			)
+		);
+		register_rest_route(
+			self::NS,
+			'/push/status',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'push_status' ),
+				'permission_callback' => '__return_true',
+				'args'                => array(
+					'challenge_id' => array( 'required' => true, 'type' => 'string' ),
+					'poll_token'   => array( 'required' => true, 'type' => 'string' ),
+				),
+			)
+		);
+		register_rest_route(
+			self::NS,
 			'/contacts/lookup',
 			array(
 				'methods'             => WP_REST_Server::CREATABLE,
@@ -107,6 +157,34 @@ class ABID_REST {
 
 	public function me() {
 		return new WP_REST_Response( ABID_Identity::current_user_identity(), 200 );
+	}
+
+	public function can_register_push_device() {
+		return is_user_logged_in() && ABID_Identity::user_has_verified_phone( get_current_user_id() );
+	}
+
+	public function push_device( WP_REST_Request $request ) {
+		$result = ABID_Push_Login::register_device(
+			get_current_user_id(),
+			$request->get_param( 'token' ),
+			$request->get_param( 'device_name' )
+		);
+		return is_wp_error( $result ) ? $result : new WP_REST_Response( $result, 200 );
+	}
+
+	public function push_start( WP_REST_Request $request ) {
+		$result = ABID_Push_Login::start( $request->get_param( 'phone' ) );
+		return is_wp_error( $result ) ? $result : new WP_REST_Response( $result, 200 );
+	}
+
+	public function push_approve( WP_REST_Request $request ) {
+		$result = ABID_Push_Login::approve( get_current_user_id(), $request->get_param( 'challenge_id' ) );
+		return is_wp_error( $result ) ? $result : new WP_REST_Response( $result, 200 );
+	}
+
+	public function push_status( WP_REST_Request $request ) {
+		$result = ABID_Push_Login::status( $request->get_param( 'challenge_id' ), $request->get_param( 'poll_token' ) );
+		return is_wp_error( $result ) ? $result : new WP_REST_Response( $result, 200 );
 	}
 
 	public function can_discover_contacts() {

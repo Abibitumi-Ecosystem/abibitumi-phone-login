@@ -38,12 +38,19 @@ class ABID_Admin {
 						<th scope="row"><label for="sms_provider"><?php esc_html_e( 'SMS provider', 'abibitumi-id' ); ?></label></th>
 						<td>
 							<select id="sms_provider" name="sms_provider">
-								<?php foreach ( array( 'log', 'twilio', 'africastalking', 'vonage' ) as $provider ) : ?>
+								<?php foreach ( array( 'log', 'hubtel', 'africastalking', 'twilio', 'vonage' ) as $provider ) : ?>
 									<option value="<?php echo esc_attr( $provider ); ?>" <?php selected( $s['sms_provider'], $provider ); ?>><?php echo esc_html( $provider ); ?></option>
 								<?php endforeach; ?>
 							</select>
 						</td>
 					</tr>
+					<tr><th scope="row"><?php esc_html_e( 'Hubtel', 'abibitumi-id' ); ?></th><td>
+						<input class="regular-text" name="hubtel_client_id" placeholder="Client ID" value="<?php echo esc_attr( $s['hubtel_client_id'] ); ?>"><br>
+						<input class="regular-text" name="hubtel_client_secret" placeholder="Client Secret" type="password" value="<?php echo esc_attr( $s['hubtel_client_secret'] ); ?>"><br>
+						<input class="regular-text" name="hubtel_from" placeholder="Sender ID" maxlength="11" value="<?php echo esc_attr( $s['hubtel_from'] ); ?>"><br>
+						<input class="regular-text" name="hubtel_endpoint" placeholder="Endpoint" value="<?php echo esc_attr( $s['hubtel_endpoint'] ); ?>">
+						<p class="description"><?php esc_html_e( 'Best Ghana-first option. Sender ID must be approved by Hubtel and no more than 11 characters.', 'abibitumi-id' ); ?></p>
+					</td></tr>
 					<tr><th scope="row"><?php esc_html_e( 'Twilio', 'abibitumi-id' ); ?></th><td>
 						<input class="regular-text" name="twilio_sid" placeholder="Account SID" value="<?php echo esc_attr( $s['twilio_sid'] ); ?>"><br>
 						<input class="regular-text" name="twilio_token" placeholder="Auth token" type="password" value="<?php echo esc_attr( $s['twilio_token'] ); ?>"><br>
@@ -68,6 +75,14 @@ class ABID_Admin {
 						<label><?php esc_html_e( 'Login redirect URL', 'abibitumi-id' ); ?> <input class="regular-text" name="login_redirect_url" value="<?php echo esc_attr( $s['login_redirect_url'] ); ?>"></label>
 						<p class="description"><?php esc_html_e( 'Use the [abid_phone_login] shortcode on a login page. Leave redirect blank to reload the page after login.', 'abibitumi-id' ); ?></p>
 						<label><input type="checkbox" name="show_on_wp_login" value="1" <?php checked( $s['show_on_wp_login'] ); ?>> <?php esc_html_e( 'Show phone login on the standard WordPress login screen', 'abibitumi-id' ); ?></label>
+					</td></tr>
+					<tr><th scope="row"><?php esc_html_e( 'Push login', 'abibitumi-id' ); ?></th><td>
+						<label><input type="checkbox" name="push_login_enabled" value="1" <?php checked( $s['push_login_enabled'] ); ?>> <?php esc_html_e( 'Allow trusted-device push approval for repeat login', 'abibitumi-id' ); ?></label>
+						<p class="description"><?php esc_html_e( 'First login still requires phone verification. After that, app clients can register a Firebase token and approve future sign-ins by push notification.', 'abibitumi-id' ); ?></p>
+						<input class="regular-text" name="firebase_project_id" placeholder="Firebase project ID" value="<?php echo esc_attr( $s['firebase_project_id'] ); ?>"><br>
+						<input class="regular-text" name="firebase_client_email" placeholder="Firebase service account client email" value="<?php echo esc_attr( $s['firebase_client_email'] ); ?>"><br>
+						<textarea class="large-text code" name="firebase_private_key" rows="5" placeholder="Firebase service account private key"><?php echo esc_textarea( $s['firebase_private_key'] ); ?></textarea>
+						<p class="description"><?php esc_html_e( 'Store a Firebase service account for Cloud Messaging only. Keep this key private.', 'abibitumi-id' ); ?></p>
 					</td></tr>
 					<tr><th scope="row"><?php esc_html_e( 'Platform integrations', 'abibitumi-id' ); ?></th><td>
 						<label><?php esc_html_e( 'BuddyBoss phone profile field ID', 'abibitumi-id' ); ?> <input type="number" min="0" name="buddyboss_phone_field_id" value="<?php echo esc_attr( $s['buddyboss_phone_field_id'] ); ?>"></label>
@@ -109,6 +124,10 @@ class ABID_Admin {
 				'africastalking_user' => sanitize_text_field( $input['africastalking_user'] ?? '' ),
 				'africastalking_key'  => sanitize_text_field( $input['africastalking_key'] ?? '' ),
 				'africastalking_from' => sanitize_text_field( $input['africastalking_from'] ?? '' ),
+				'hubtel_client_id'    => sanitize_text_field( $input['hubtel_client_id'] ?? '' ),
+				'hubtel_client_secret' => sanitize_text_field( $input['hubtel_client_secret'] ?? '' ),
+				'hubtel_from'         => substr( sanitize_text_field( $input['hubtel_from'] ?? 'ABIBITUMI' ), 0, 11 ),
+				'hubtel_endpoint'     => esc_url_raw( $input['hubtel_endpoint'] ?? 'https://devp-sms03726-api.hubtel.com/v1/messages/send' ),
 				'vonage_key'          => sanitize_text_field( $input['vonage_key'] ?? '' ),
 				'vonage_secret'       => sanitize_text_field( $input['vonage_secret'] ?? '' ),
 				'vonage_from'         => sanitize_text_field( $input['vonage_from'] ?? '' ),
@@ -118,6 +137,10 @@ class ABID_Admin {
 				'allow_registration'  => empty( $input['allow_registration'] ) ? 0 : 1,
 				'login_redirect_url'  => esc_url_raw( $input['login_redirect_url'] ?? '' ),
 				'show_on_wp_login'    => empty( $input['show_on_wp_login'] ) ? 0 : 1,
+				'push_login_enabled'  => empty( $input['push_login_enabled'] ) ? 0 : 1,
+				'firebase_project_id' => sanitize_text_field( $input['firebase_project_id'] ?? '' ),
+				'firebase_client_email' => sanitize_email( $input['firebase_client_email'] ?? '' ),
+				'firebase_private_key' => sanitize_textarea_field( $input['firebase_private_key'] ?? '' ),
 				'buddyboss_phone_field_id' => absint( $input['buddyboss_phone_field_id'] ?? 0 ),
 				'contact_discovery_enabled' => empty( $input['contact_discovery_enabled'] ) ? 0 : 1,
 				'contact_discovery_limit' => max( 1, min( 1000, absint( $input['contact_discovery_limit'] ?? 250 ) ) ),

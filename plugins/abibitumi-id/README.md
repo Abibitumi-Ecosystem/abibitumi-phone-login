@@ -27,6 +27,20 @@ properties.
   - Body: `{ "phone": "+15555555555", "code": "123456" }`
   - Verifies the OTP, marks the phone as verified, and signs the user in when
     the phone is linked to an account.
+- `POST /wp-json/abid/v1/push/device`
+  - Body: `{ "token": "firebase-device-token", "device_name": "Android" }`
+  - Requires a logged-in user with a verified phone.
+  - Registers the current device as trusted for future push-login approvals.
+- `POST /wp-json/abid/v1/push/start`
+  - Body: `{ "phone": "024 123 4567" }`
+  - Sends a Firebase push approval request to trusted devices for that phone.
+- `POST /wp-json/abid/v1/push/approve`
+  - Body: `{ "challenge_id": "..." }`
+  - Requires the trusted device user to be logged in with a verified phone.
+- `POST /wp-json/abid/v1/push/status`
+  - Body: `{ "challenge_id": "...", "poll_token": "..." }`
+  - Polls a pending push login and signs in the requesting browser/session once
+    the trusted device approves.
 - `GET /wp-json/abid/v1/me`
   - Returns the current user's Abibitumi ID phone identity.
 - `POST /wp-json/abid/v1/contacts/lookup`
@@ -50,13 +64,21 @@ For a phone-first sign-in experience:
 - enable phone login on the standard WordPress login screen.
 - add `[abid_phone_login]` to any BuddyBoss/login page that should use the
   same phone-first flow.
+- configure Firebase Cloud Messaging if app clients should approve repeat
+  sign-ins by push notification instead of SMS.
 
 Supported SMS providers:
 
+- Hubtel
 - Twilio
 - Africa's Talking
 - Vonage
 - `log` for local development only
+
+For Ghana production, use Hubtel first when possible because it is Ghana-native
+and supports approved sender IDs. Africa's Talking is the next-best supported
+Ghana/Africa-first option. Twilio remains useful globally, but Ghana delivery
+requires attention to sender ID rules.
 
 ## Identity Meta
 
@@ -114,11 +136,22 @@ community stack.
 
 See `ROADMAP.md` for the WhatsApp-competitive phone identity plan.
 
+## Push Login
+
+Push login is for repeat sign-ins from a phone number that already has a trusted
+device. It does not replace the first verification step. The first verified
+login binds the phone to the user. After that, an app can register its Firebase
+device token with `/push/device`; future login attempts can call `/push/start`
+and wait on `/push/status` while the trusted app approves through
+`/push/approve`.
+
 ## Production Readiness
 
 Before switching this on for everyone:
 
 - configure a real SMS provider; do not use `log` mode in production.
+- for Ghana-first production, configure Hubtel Client ID, Client Secret, and an
+  approved Sender ID such as `ABIBITUMI`.
 - place `[abid_phone_login]` on the public login page and confirm the standard
   WordPress login screen also shows phone sign-in.
 - test existing account linking for users who already have emails/usernames.

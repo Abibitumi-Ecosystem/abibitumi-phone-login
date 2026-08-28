@@ -84,6 +84,17 @@ class ABID_Admin {
 						<textarea class="large-text code" name="firebase_private_key" rows="5" placeholder="Firebase service account private key"><?php echo esc_textarea( $s['firebase_private_key'] ); ?></textarea>
 						<p class="description"><?php esc_html_e( 'Store a Firebase service account for Cloud Messaging only. Keep this key private.', 'abibitumi-id' ); ?></p>
 					</td></tr>
+					<tr><th scope="row"><?php esc_html_e( 'Ecosystem sign-in', 'abibitumi-id' ); ?></th><td>
+						<label><input type="checkbox" name="ecosystem_sso_enabled" value="1" <?php checked( $s['ecosystem_sso_enabled'] ); ?>> <?php esc_html_e( 'Allow Abibitumi ID sign-in across ecosystem sites', 'abibitumi-id' ); ?></label><br>
+						<label><?php esc_html_e( 'Identity provider URL', 'abibitumi-id' ); ?> <input class="regular-text" name="ecosystem_identity_url" value="<?php echo esc_attr( $s['ecosystem_identity_url'] ); ?>"></label><br>
+						<label><?php esc_html_e( 'Site slug', 'abibitumi-id' ); ?> <input class="regular-text" name="ecosystem_site_slug" placeholder="abibitumi" value="<?php echo esc_attr( $s['ecosystem_site_slug'] ); ?>"></label><br>
+						<label><?php esc_html_e( 'Shared SSO secret', 'abibitumi-id' ); ?> <input class="regular-text" name="ecosystem_sso_secret" type="password" value="<?php echo esc_attr( $s['ecosystem_sso_secret'] ); ?>"></label>
+						<p class="description"><?php esc_html_e( 'Use the same long random secret on Abibitumi.com and every trusted sister site that accepts Abibitumi ID.', 'abibitumi-id' ); ?></p>
+						<label for="ecosystem_allowed_return_hosts"><?php esc_html_e( 'Allowed ecosystem domains', 'abibitumi-id' ); ?></label><br>
+						<textarea id="ecosystem_allowed_return_hosts" name="ecosystem_allowed_return_hosts" class="large-text code" rows="4"><?php echo esc_textarea( $s['ecosystem_allowed_return_hosts'] ); ?></textarea>
+						<p class="description"><?php esc_html_e( 'One domain per line. These are the sites Abibitumi.com may redirect back to after central sign-in.', 'abibitumi-id' ); ?></p>
+						<label><input type="checkbox" name="ecosystem_auto_create_users" value="1" <?php checked( $s['ecosystem_auto_create_users'] ); ?>> <?php esc_html_e( 'Create local users from verified Abibitumi ID identities', 'abibitumi-id' ); ?></label>
+					</td></tr>
 					<tr><th scope="row"><?php esc_html_e( 'Platform integrations', 'abibitumi-id' ); ?></th><td>
 						<label><?php esc_html_e( 'BuddyBoss phone profile field ID', 'abibitumi-id' ); ?> <input type="number" min="0" name="buddyboss_phone_field_id" value="<?php echo esc_attr( $s['buddyboss_phone_field_id'] ); ?>"></label>
 						<p class="description"><?php esc_html_e( 'When set, verified phone numbers are synced into this BuddyBoss/BuddyPress xProfile field.', 'abibitumi-id' ); ?></p>
@@ -141,6 +152,12 @@ class ABID_Admin {
 				'firebase_project_id' => sanitize_text_field( $input['firebase_project_id'] ?? '' ),
 				'firebase_client_email' => sanitize_email( $input['firebase_client_email'] ?? '' ),
 				'firebase_private_key' => sanitize_textarea_field( $input['firebase_private_key'] ?? '' ),
+				'ecosystem_sso_enabled' => empty( $input['ecosystem_sso_enabled'] ) ? 0 : 1,
+				'ecosystem_identity_url' => esc_url_raw( $input['ecosystem_identity_url'] ?? 'https://abibitumi.com' ),
+				'ecosystem_site_slug' => sanitize_key( $input['ecosystem_site_slug'] ?? '' ),
+				'ecosystem_sso_secret' => sanitize_text_field( $input['ecosystem_sso_secret'] ?? '' ),
+				'ecosystem_allowed_return_hosts' => implode( "\n", $this->parse_host_list( $input['ecosystem_allowed_return_hosts'] ?? '' ) ),
+				'ecosystem_auto_create_users' => empty( $input['ecosystem_auto_create_users'] ) ? 0 : 1,
 				'buddyboss_phone_field_id' => absint( $input['buddyboss_phone_field_id'] ?? 0 ),
 				'contact_discovery_enabled' => empty( $input['contact_discovery_enabled'] ) ? 0 : 1,
 				'contact_discovery_limit' => max( 1, min( 1000, absint( $input['contact_discovery_limit'] ?? 250 ) ) ),
@@ -153,5 +170,19 @@ class ABID_Admin {
 		);
 		wp_safe_redirect( add_query_arg( array( 'page' => 'abibitumi-id', 'updated' => '1' ), admin_url( 'options-general.php' ) ) );
 		exit;
+	}
+
+	private function parse_host_list( $value ) {
+		$items = preg_split( '/[\s,]+/', (string) $value );
+		$hosts = array();
+		foreach ( $items as $item ) {
+			$host = strtolower( trim( (string) $item ) );
+			$host = preg_replace( '#^https?://#', '', $host );
+			$host = preg_replace( '#/.*$#', '', $host );
+			if ( $host && preg_match( '/^[a-z0-9.-]+$/', $host ) ) {
+				$hosts[] = $host;
+			}
+		}
+		return array_values( array_unique( $hosts ) );
 	}
 }

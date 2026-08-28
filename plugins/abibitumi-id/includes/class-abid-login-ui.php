@@ -57,7 +57,7 @@ class ABID_Login_UI {
 			'ABIDLogin',
 			array(
 				'api'      => esc_url_raw( rest_url( ABID_REST::NS ) ),
-				'redirect' => esc_url_raw( $atts['redirect'] ),
+				'redirect' => esc_url_raw( $redirect ),
 				'country'  => ABID_Settings::get( 'default_phone_country', 'GH' ),
 				'i18n'     => array(
 					'phoneRequired' => __( 'Enter your phone number.', 'abibitumi-id' ),
@@ -73,9 +73,14 @@ class ABID_Login_UI {
 	}
 
 	private function render_widget() {
+		$sso_url = $this->ecosystem_sso_url();
 		ob_start();
 		?>
 		<div class="abid-login" data-abid-login>
+			<?php if ( $sso_url ) : ?>
+				<a class="abid-login__sso" href="<?php echo esc_url( $sso_url ); ?>"><?php esc_html_e( 'Continue with Abibitumi ID', 'abibitumi-id' ); ?></a>
+				<div class="abid-login__divider"><span><?php esc_html_e( 'or', 'abibitumi-id' ); ?></span></div>
+			<?php endif; ?>
 			<form class="abid-login__form" data-step="phone">
 				<div class="abid-login__field">
 					<label for="abid_phone"><?php esc_html_e( 'Phone number', 'abibitumi-id' ); ?></label>
@@ -92,5 +97,24 @@ class ABID_Login_UI {
 		</div>
 		<?php
 		return ob_get_clean();
+	}
+
+	private function ecosystem_sso_url() {
+		if ( ! ABID_Settings::get( 'ecosystem_sso_enabled', 1 ) ) {
+			return '';
+		}
+
+		$identity_url = ABID_Settings::get( 'ecosystem_identity_url', 'https://abibitumi.com' );
+		$identity_host = wp_parse_url( $identity_url, PHP_URL_HOST );
+		$current_host  = wp_parse_url( home_url(), PHP_URL_HOST );
+		if ( ! $identity_url || ! $identity_host || strtolower( $identity_host ) === strtolower( (string) $current_host ) ) {
+			return '';
+		}
+
+		$return_to = is_ssl() ? 'https://' : 'http://';
+		$return_to .= isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : $current_host;
+		$return_to .= isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '/';
+
+		return trailingslashit( $identity_url ) . 'wp-json/' . ABID_REST::NS . '/sso/start?return_to=' . rawurlencode( $return_to );
 	}
 }

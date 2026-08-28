@@ -23,6 +23,7 @@ class ABID_Plugin {
 		load_plugin_textdomain( 'abibitumi-id', false, dirname( plugin_basename( ABID_FILE ) ) . '/languages' );
 		self::maybe_upgrade();
 		( new ABID_Login_UI() )->init();
+		( new ABID_Ecosystem_SSO() )->init();
 		( new ABID_Integrations() )->init();
 		( new ABID_Admin_Entitlements() )->init();
 		( new ABID_REST() )->init();

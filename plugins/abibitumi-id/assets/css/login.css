@@ -9,6 +9,37 @@
 	gap: 14px;
 }
 
+.abid-login__sso {
+	align-items: center;
+	box-sizing: border-box;
+	display: flex;
+	font: inherit;
+	font-weight: 700;
+	justify-content: center;
+	min-height: 48px;
+	padding: 10px 16px;
+	text-align: center;
+	width: 100%;
+}
+
+.abid-login__divider {
+	color: #646970;
+	display: flex;
+	font-size: 13px;
+	gap: 10px;
+	margin: 12px 0;
+}
+
+.abid-login__divider::before,
+.abid-login__divider::after {
+	background: currentColor;
+	content: "";
+	flex: 1;
+	height: 1px;
+	margin-top: .75em;
+	opacity: .25;
+}
+
 .abid-login__field {
 	display: grid;
 	gap: 6px;

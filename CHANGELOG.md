@@ -23,6 +23,8 @@
 - Added Hubtel as the recommended Ghana-first SMS provider.
 - Added Firebase trusted-device push login for repeat sign-in approvals after
   first phone verification.
+- Added Abibitumi.com identity-provider SSO tickets so sister sites can accept
+  Abibitumi ID and link users by verified phone hash or email.
 
 ## Phone Login
 

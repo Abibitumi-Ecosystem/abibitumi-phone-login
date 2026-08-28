@@ -41,6 +41,17 @@ properties.
   - Body: `{ "challenge_id": "...", "poll_token": "..." }`
   - Polls a pending push login and signs in the requesting browser/session once
     the trusted device approves.
+- `GET /wp-json/abid/v1/sso/start?return_to=https%3A%2F%2Fabibiwiase.com%2F`
+  - Starts Abibitumi ecosystem sign-in on the identity provider site.
+  - If the user is not logged in, they are sent through the normal Abibitumi.com
+    login screen first.
+  - If the user is logged in, Abibitumi.com redirects back with a short-lived
+    one-time ticket.
+- `POST /wp-json/abid/v1/sso/validate`
+  - Body: `{ "ticket": "..." }`
+  - Header: `X-Abibitumi-ID-Secret: shared-secret`
+  - Validates and consumes a one-time ticket. Sister sites use this to create or
+    link the local WordPress user and set a local login cookie.
 - `GET /wp-json/abid/v1/me`
   - Returns the current user's Abibitumi ID phone identity.
 - `POST /wp-json/abid/v1/contacts/lookup`
@@ -66,6 +77,8 @@ For a phone-first sign-in experience:
   same phone-first flow.
 - configure Firebase Cloud Messaging if app clients should approve repeat
   sign-ins by push notification instead of SMS.
+- configure ecosystem sign-in so Abibitumi.com can act as the identity provider
+  and sister sites can accept Abibitumi ID.
 
 Supported SMS providers:
 
@@ -118,6 +131,33 @@ When a matched user logs in or verifies their phone, Abibitumi ID grants the
 converted to hashes on save. This feature does not grant multisite network super
 admin.
 
+## Ecosystem Sign-In
+
+Use Abibitumi.com as the identity provider for the whole ecosystem. Install and
+configure Abibitumi ID on Abibitumi.com and on each sister site.
+
+On Abibitumi.com:
+
+- enable `Ecosystem sign-in`.
+- set `Identity provider URL` to `https://abibitumi.com`.
+- set a long random `Shared SSO secret`.
+- list every trusted destination under `Allowed ecosystem domains`.
+
+On each sister site:
+
+- enable `Ecosystem sign-in`.
+- set `Identity provider URL` to `https://abibitumi.com`.
+- use the same `Shared SSO secret`.
+- enable `Create local users from verified Abibitumi ID identities` if members
+  should land in the sister site without manual account setup.
+- place `[abid_phone_login]` on the login page. The widget will show
+  `Continue with Abibitumi ID` when the current site is not the identity
+  provider.
+
+The SSO ticket is one-time and expires after five minutes. The sister site
+validates it server-to-server, then links by verified phone hash first and email
+second before creating a local user.
+
 ## BuddyBoss and Better Messages
 
 Abibitumi ID is designed to be the phone-first trust layer for the existing
@@ -157,6 +197,7 @@ Before switching this on for everyone:
 - test existing account linking for users who already have emails/usernames.
 - test new account creation from only a phone number.
 - test contact discovery from site and app clients.
+- test ecosystem sign-in from Abibitumi.com into each sister site.
 - test BuddyBoss profile sync and Better Messages send/verified behavior.
 - run the smoke checks below.
 

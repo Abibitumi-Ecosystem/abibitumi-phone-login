@@ -3,7 +3,7 @@
  * Plugin Name:       Abibitumi ID
  * Plugin URI:        https://abibitumi.com/
  * Description:       Identity layer and phone OTP login for Abibitumi WordPress/BuddyBoss properties.
- * Version:           0.1.0
+ * Version:           0.3.0
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            Abibitumi

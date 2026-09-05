@@ -1,6 +1,10 @@
-# Abibitumi ID and Phone Login
+# Abibitumi ID Phone Login (Legacy Repository)
 
-WordPress/BuddyBoss identity and login work for Abibitumi properties.
+Canonical development has moved to [Abibitumi-Ecosystem/abibitumi-identity](https://github.com/Abibitumi-Ecosystem/abibitumi-identity). The WordPress plugin now lives there under `wordpress/abibitumi-id/`.
+
+Keep this repository for implementation history, release provenance, and references to the original phone-login work. New Abibitumi ID, SSO, phone-login, trusted-device, contact discovery, BuddyBoss, Better Messages, and cross-site login work belongs in `abibitumi-identity`.
+
+AI Support, formerly the Tidio chat replacement, is a separate product concern. It should live in its own repository and integrate with Abibitumi ID only through explicit APIs or hooks.WordPress/BuddyBoss identity and login work for Abibitumi properties.
 
 This repository is for two closely related authentication concerns:
 

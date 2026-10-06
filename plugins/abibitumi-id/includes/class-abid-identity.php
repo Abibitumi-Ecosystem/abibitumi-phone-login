@@ -15,14 +15,14 @@ class ABID_Identity {
 	const VERIFIED_AT_META = 'abid_phone_verified_at';
 
 	public static function mark_phone_verified( $user_id, $phone ) {
-		$phone = ABID_OTP_Store::normalize_phone( $phone );
-		update_user_meta( $user_id, self::PHONE_META, $phone );
-		update_user_meta( $user_id, self::PHONE_HASH_META, ABID_OTP_Store::phone_hash( $phone ) );
-		update_user_meta( $user_id, self::VERIFIED_AT_META, current_time( 'mysql', true ) );
-		do_action( 'abid_phone_verified', (int) $user_id, $phone );
+		return ABID_Phone_Management::assign_verified_number( (int) $user_id, $phone );
 	}
 
 	public static function find_user_by_phone( $phone ) {
+		$user_id = ABID_Phone_Management::find_user_id( $phone );
+		if ( $user_id ) {
+			return $user_id;
+		}
 		$users = get_users(
 			array(
 				'number'     => 1,
@@ -55,9 +55,28 @@ class ABID_Identity {
 		);
 
 		$matches = array();
+		global $wpdb;
+		$table        = ABID_Phone_Management::table();
+		$placeholders = implode( ', ', array_fill( 0, count( $phone_hashes ), '%s' ) );
+		$query        = $wpdb->prepare( "SELECT phone_hash, user_id FROM {$table} WHERE phone_hash IN ({$placeholders})", $phone_hashes );
+		$rows         = $wpdb->get_results( $query );
+		foreach ( $rows as $row ) {
+			$user = get_user_by( 'id', (int) $row->user_id );
+			if ( $user ) {
+				$matches[ $row->phone_hash ] = array(
+					'user_id'      => (int) $user->ID,
+					'display_name' => $user->display_name,
+					'avatar_url'   => get_avatar_url( $user->ID, array( 'size' => 96 ) ),
+					'verified'     => true,
+				);
+			}
+		}
 		foreach ( $users as $user ) {
 			$hash = get_user_meta( $user->ID, self::PHONE_HASH_META, true );
 			if ( ! $hash ) {
+				continue;
+			}
+			if ( isset( $matches[ $hash ] ) ) {
 				continue;
 			}
 			$matches[ $hash ] = array(
@@ -71,7 +90,7 @@ class ABID_Identity {
 	}
 
 	public static function user_has_verified_phone( $user_id ) {
-		return (bool) get_user_meta( (int) $user_id, self::VERIFIED_AT_META, true );
+		return ABID_Phone_Management::has_verified_phone( (int) $user_id );
 	}
 
 	public static function user_context( $user_id ) {
@@ -79,9 +98,15 @@ class ABID_Identity {
 		if ( ! $user_id ) {
 			return null;
 		}
+		$phones = ABID_Phone_Management::user_phones( $user_id );
+		foreach ( $phones as &$phone ) {
+			unset( $phone['phone_hash'] );
+		}
+		unset( $phone );
 		return array(
 			'user_id'           => $user_id,
 			'phone'             => get_user_meta( $user_id, self::PHONE_META, true ),
+			'phones'            => $phones,
 			'phone_verified'    => self::user_has_verified_phone( $user_id ),
 			'phone_verified_at' => get_user_meta( $user_id, self::VERIFIED_AT_META, true ),
 		);

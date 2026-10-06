@@ -25,8 +25,10 @@ properties.
   - Sends an OTP using the configured SMS provider.
 - `POST /wp-json/abid/v1/phone/verify`
   - Body: `{ "phone": "+15555555555", "code": "123456" }`
-  - Verifies the OTP, marks the phone as verified, and signs the user in when
-    the phone is linked to an account.
+  - Verifies the OTP and marks the phone as verified. Sign-in succeeds only
+    when the site's normal account-approval checks also allow that user.
+  - New phone-only users can remain pending administrator approval after SMS
+    verification. A valid code alone does not grant access to a pending user.
 - `POST /wp-json/abid/v1/push/device`
   - Body: `{ "token": "firebase-device-token", "device_name": "Android" }`
   - Requires a logged-in user with a verified phone.
@@ -53,7 +55,7 @@ properties.
   - Validates and consumes a one-time ticket. Sister sites use this to create or
     link the local WordPress user and set a local login cookie.
 - `GET /wp-json/abid/v1/me`
-  - Returns the current user's Abibitumi ID phone identity.
+  - Returns the current user's Abibitumi ID phone identity, including their verified numbers.
 - `POST /wp-json/abid/v1/contacts/lookup`
   - Body: `{ "contacts": [ { "phone": "+15555555555" } ] }`
   - Requires the current user to be logged in with a verified phone.
@@ -80,6 +82,16 @@ For a phone-first sign-in experience:
 - configure ecosystem sign-in so Abibitumi.com can act as the identity provider
   and sister sites can accept Abibitumi ID.
 
+Phone-only signups leave the email field empty because no email address was
+collected; any feature requiring email must request a real address separately.
+The plugin upgrade clears the old `@phone.abibitumi.invalid` placeholders from
+accounts it created, without changing their approval status. On approval-gated
+sites, an administrator must still
+approve these accounts before they can sign in. To link a number to an existing
+account (especially an administrator account), sign in to that account first
+and verify the number from its profile; possession of a number in an old,
+unverified profile field is not sufficient to take over an existing account.
+
 Supported SMS providers:
 
 - Hubtel
@@ -93,6 +105,13 @@ and supports approved sender IDs. Africa's Talking is the next-best supported
 Ghana/Africa-first option. Twilio remains useful globally, but Ghana delivery
 requires attention to sender ID rules.
 
+When Hubtel is primary, the optional Twilio fallback routes non-Ghana numbers
+to Twilio and retries Hubtel delivery failures through Twilio. Configure a
+Twilio Account SID, API Key SID, API Key secret, and either a Twilio sender
+number or Messaging Service SID. Saved secrets are not displayed again in the
+settings form. Enable the fallback only after the credentials and sender are
+ready, and test with a number you control before relying on it for users.
+
 ## Identity Meta
 
 - `abid_phone_e164`
@@ -101,6 +120,14 @@ requires attention to sender ID rules.
 
 `abid_phone_hash` is used for lookups so other plugins do not need to query by
 raw phone number.
+
+Verified number ownership is also indexed in the private
+`{prefix}abid_verified_phones` table. Existing verified primary numbers are
+migrated automatically on plugin upgrade. A user can manage numbers from their
+WordPress profile under **Abibitumi ID phone numbers**: add a number by SMS
+verification, choose a primary sign-in number, or remove a secondary number.
+One phone can belong to only one account. An administrator can transfer a
+number to another account only after a fresh OTP is entered for that number.
 
 ## Phone Normalization
 

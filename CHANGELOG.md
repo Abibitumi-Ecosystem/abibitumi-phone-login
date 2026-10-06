@@ -1,5 +1,27 @@
 # Changelog
 
+### 0.4.5
+- Leave phone-only account email blank instead of inventing a `.invalid` address; clear matching old placeholders on upgrade.
+- Apply the site's normal account-approval gate before issuing a phone-login cookie.
+- Verify the browser actually has a WordPress session before showing “You are signed in.”
+- Keep SMS verification and account approval distinct: a pending account remains pending after a valid code.
+
+### 0.4.4
+- Add Twilio API-key authentication with separate Account SID, API Key SID, and API Key secret fields.
+- Add optional international routing and Hubtel-failure fallback to Twilio while retaining Hubtel as Ghana-first provider.
+- Hide saved provider secrets in settings and preserve them when password fields are left blank.
+
+### 0.4.3
+- Move phone add/verify/manage forms to a dedicated admin page so they do not
+  nest inside WordPress's profile form and silently submit to the wrong handler.
+
+### 0.4.2
+- Send Hubtel OTP messages through the account's working SMSC endpoint and
+  migrate the old developer-portal endpoint setting automatically.
+
+### 0.4.1
+- Make the registered phone-profile renderer public so WordPress can invoke it.
+
 ## Repository
 
 ### Unreleased

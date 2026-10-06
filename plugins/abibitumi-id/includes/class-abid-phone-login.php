@@ -34,13 +34,16 @@ class ABID_Phone_Login {
 		);
 	}
 
-	public static function verify( $phone, $code ) {
+	public static function verify( $phone, $code, $target_user_id = null, $authenticate = true, $allow_transfer = false ) {
 		$row = ABID_OTP_Store::verify( $phone, $code );
 		if ( is_wp_error( $row ) ) {
 			return $row;
 		}
 
-		$user_id = get_current_user_id();
+		$user_id = $target_user_id ? (int) $target_user_id : get_current_user_id();
+		if ( $target_user_id && ! current_user_can( 'edit_user', (int) $target_user_id ) ) {
+			return new WP_Error( 'abid_phone_manage_denied', __( 'You are not allowed to link a phone number to this account.', 'abibitumi-id' ), array( 'status' => 403 ) );
+		}
 		if ( ! $user_id ) {
 			$user_id = $row->user_id ? (int) $row->user_id : ABID_Identity::find_user_by_phone( $phone );
 		}
@@ -51,9 +54,28 @@ class ABID_Phone_Login {
 			return new WP_Error( 'abid_no_account', __( 'No account is linked to that verified phone number.', 'abibitumi-id' ), array( 'status' => 404 ) );
 		}
 
-		ABID_Identity::mark_phone_verified( $user_id, $phone );
-		wp_set_current_user( $user_id );
-		wp_set_auth_cookie( $user_id, true, is_ssl() );
+		$linked = ABID_Phone_Management::assign_verified_number( $user_id, $phone, $allow_transfer );
+		if ( is_wp_error( $linked ) ) {
+			return $linked;
+		}
+		if ( $authenticate ) {
+			$user = get_user_by( 'id', $user_id );
+			if ( ! $user instanceof WP_User ) {
+				return new WP_Error( 'abid_no_account', __( 'This account is no longer available.', 'abibitumi-id' ), array( 'status' => 404 ) );
+			}
+			// Passwordless login must obey the same account-approval gate as
+			// WordPress password login (including New User Approve).
+			$allowed = apply_filters( 'wp_authenticate_user', $user, '' );
+			if ( is_wp_error( $allowed ) ) {
+				return new WP_Error( 'abid_account_not_approved', wp_strip_all_tags( $allowed->get_error_message() ), array( 'status' => 403 ) );
+			}
+			if ( ! $allowed instanceof WP_User || (int) $allowed->ID !== (int) $user_id ) {
+				return new WP_Error( 'abid_account_not_approved', __( 'This account cannot sign in yet. Please contact the site administrator.', 'abibitumi-id' ), array( 'status' => 403 ) );
+			}
+			wp_set_current_user( $user_id );
+			wp_set_auth_cookie( $user_id, true, is_ssl() );
+			do_action( 'wp_login', $user->user_login, $user );
+		}
 
 		return array(
 			'ok'       => true,
@@ -66,13 +88,14 @@ class ABID_Phone_Login {
 	private static function create_user_for_phone( $phone ) {
 		$hash     = substr( ABID_OTP_Store::phone_hash( $phone ), 0, 12 );
 		$username = 'abid_' . $hash;
-		$email    = $username . '@phone.abibitumi.invalid';
 		$user_id  = wp_insert_user(
 			array(
 				'user_login'   => $username,
-				'user_email'   => $email,
+				// WordPress accepts an empty email for programmatically created
+				// users. Never present a fabricated email as their identity.
+				'user_email'   => '',
 				'user_pass'    => wp_generate_password( 32, true, true ),
-				'display_name' => ABID_OTP_Store::normalize_phone( $phone ),
+				'display_name' => __( 'Abibitumi member', 'abibitumi-id' ),
 				'role'         => get_option( 'default_role', 'subscriber' ),
 			)
 		);

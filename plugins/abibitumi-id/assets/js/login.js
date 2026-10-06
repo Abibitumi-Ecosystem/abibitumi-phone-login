@@ -83,12 +83,19 @@
 			}
 			setBusy( true, text( 'verifying' ) );
 			api( '/phone/verify', { phone: sentPhone || phone.value, code: code.value } ).then( function () {
-				status.textContent = text( 'ready' );
-				if ( window.ABIDLogin.redirect ) {
-					window.location.href = window.ABIDLogin.redirect;
-				} else {
-					window.location.reload();
-				}
+				return fetch( window.ABIDLogin.sessionCheck, { credentials: 'same-origin', cache: 'no-store' } )
+					.then( function ( response ) { return response.json(); } )
+					.then( function ( session ) {
+						if ( ! session.logged_in ) {
+							throw new Error( text( 'notSignedIn' ) );
+						}
+						status.textContent = text( 'ready' );
+						if ( window.ABIDLogin.redirect ) {
+							window.location.href = window.ABIDLogin.redirect;
+						} else {
+							window.location.reload();
+						}
+					} );
 			} ).catch( function ( error ) {
 				setBusy( false, error.message );
 			} );

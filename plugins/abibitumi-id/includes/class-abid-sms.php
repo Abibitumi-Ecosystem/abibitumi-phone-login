@@ -13,6 +13,20 @@ class ABID_SMS {
 	public static function send_otp( $phone, $code ) {
 		$message  = sprintf( __( 'Your Abibitumi verification code is %s.', 'abibitumi-id' ), $code );
 		$provider = (string) ABID_Settings::get( 'sms_provider', 'log' );
+		$phone    = ABID_OTP_Store::normalize_phone( $phone );
+
+		// Hubtel remains the Ghana-first route. When enabled, Twilio handles
+		// non-Ghana destinations and retries Hubtel delivery failures.
+		if ( 'hubtel' === $provider && ABID_Settings::get( 'twilio_fallback_enabled', 0 ) ) {
+			if ( 0 !== strpos( $phone, '+233' ) ) {
+				return self::twilio( $phone, $message );
+			}
+			$response = self::hubtel( $phone, $message );
+			if ( is_wp_error( $response ) && self::twilio_is_configured() ) {
+				return self::twilio( $phone, $message );
+			}
+			return $response;
+		}
 
 		if ( 'twilio' === $provider ) {
 			return self::twilio( $phone, $message );
@@ -35,21 +49,39 @@ class ABID_SMS {
 	}
 
 	private static function twilio( $phone, $message ) {
-		$sid   = ABID_Settings::get( 'twilio_sid' );
-		$token = ABID_Settings::get( 'twilio_token' );
-		$from  = ABID_Settings::get( 'twilio_from' );
-		if ( ! $sid || ! $token || ! $from ) {
+		$account_sid = ABID_Settings::get( 'twilio_account_sid' ) ? ABID_Settings::get( 'twilio_account_sid' ) : ABID_Settings::get( 'twilio_sid' );
+		$key_sid     = ABID_Settings::get( 'twilio_api_key_sid' );
+		$key_secret  = ABID_Settings::get( 'twilio_api_key_secret' );
+		$auth_token  = ABID_Settings::get( 'twilio_token' );
+		$from        = ABID_Settings::get( 'twilio_from' );
+		$use_api_key = $key_sid && $key_secret;
+		if ( ! $account_sid || ! $from || ( ! $use_api_key && ! $auth_token ) ) {
 			return new WP_Error( 'abid_twilio_unconfigured', __( 'Twilio is not configured.', 'abibitumi-id' ) );
 		}
+		$username = $use_api_key ? $key_sid : $account_sid;
+		$password = $use_api_key ? $key_secret : $auth_token;
+		$body     = array( 'To' => ABID_OTP_Store::normalize_phone( $phone ), 'Body' => $message );
+		if ( 0 === strpos( $from, 'MG' ) ) {
+			$body['MessagingServiceSid'] = $from;
+		} else {
+			$body['From'] = $from;
+		}
 		$response = wp_remote_post(
-			'https://api.twilio.com/2010-04-01/Accounts/' . rawurlencode( $sid ) . '/Messages.json',
+			'https://api.twilio.com/2010-04-01/Accounts/' . rawurlencode( $account_sid ) . '/Messages.json',
 			array(
-				'headers' => array( 'Authorization' => 'Basic ' . base64_encode( $sid . ':' . $token ) ),
-				'body'    => array( 'From' => $from, 'To' => ABID_OTP_Store::normalize_phone( $phone ), 'Body' => $message ),
+				'headers' => array( 'Authorization' => 'Basic ' . base64_encode( $username . ':' . $password ) ),
+				'body'    => $body,
 				'timeout' => 15,
 			)
 		);
 		return self::ok_response( $response, 201 );
+	}
+
+	private static function twilio_is_configured() {
+		$account_sid = ABID_Settings::get( 'twilio_account_sid' ) ? ABID_Settings::get( 'twilio_account_sid' ) : ABID_Settings::get( 'twilio_sid' );
+		$has_api_key = ABID_Settings::get( 'twilio_api_key_sid' ) && ABID_Settings::get( 'twilio_api_key_secret' );
+		$has_legacy  = ABID_Settings::get( 'twilio_token' );
+		return $account_sid && ABID_Settings::get( 'twilio_from' ) && ( $has_api_key || $has_legacy );
 	}
 
 	private static function africas_talking( $phone, $message ) {
@@ -80,21 +112,24 @@ class ABID_SMS {
 			return new WP_Error( 'abid_hubtel_unconfigured', __( 'Hubtel is not configured.', 'abibitumi-id' ) );
 		}
 
-		$response = wp_remote_post(
-			esc_url_raw( $endpoint ),
+		// This account's verified Hubtel SMSC endpoint accepts the client ID,
+		// client secret, sender, recipient, and content as query parameters.
+		// Keep this request on HTTPS and never log the resulting URL (it contains
+		// the provider credentials).
+		$url = add_query_arg(
 			array(
-				'headers' => array(
-					'Authorization' => 'Basic ' . base64_encode( $client_id . ':' . $client_secret ),
-					'Content-Type'  => 'application/json',
-					'Accept'        => 'application/json',
-				),
-				'body'    => wp_json_encode(
-					array(
-						'from'    => $from,
-						'to'      => ABID_OTP_Store::normalize_phone( $phone ),
-						'content' => $message,
-					)
-				),
+				'clientsecret' => $client_secret,
+				'clientid'     => $client_id,
+				'from'         => $from,
+				'to'           => ABID_OTP_Store::normalize_phone( $phone ),
+				'content'      => $message,
+			),
+			esc_url_raw( $endpoint )
+		);
+		$response = wp_remote_get(
+			$url,
+			array(
+				'headers' => array( 'Accept' => 'application/json' ),
 				'timeout' => 15,
 			)
 		);

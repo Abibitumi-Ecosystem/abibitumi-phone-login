@@ -3,7 +3,7 @@
  * Plugin Name:       Abibitumi ID
  * Plugin URI:        https://abibitumi.com/
  * Description:       Identity layer and phone OTP login for Abibitumi WordPress/BuddyBoss properties.
- * Version:           0.3.0
+ * Version:           0.4.5
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            Abibitumi
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'ABID_VERSION', '0.3.0' );
+define( 'ABID_VERSION', '0.4.5' );
 define( 'ABID_FILE', __FILE__ );
 define( 'ABID_DIR', plugin_dir_path( __FILE__ ) );
 define( 'ABID_URL', plugin_dir_url( __FILE__ ) );
@@ -26,6 +26,7 @@ require_once ABID_DIR . 'includes/class-abid-settings.php';
 require_once ABID_DIR . 'includes/class-abid-otp-store.php';
 require_once ABID_DIR . 'includes/class-abid-sms.php';
 require_once ABID_DIR . 'includes/class-abid-identity.php';
+require_once ABID_DIR . 'includes/class-abid-phone-management.php';
 require_once ABID_DIR . 'includes/class-abid-phone-login.php';
 require_once ABID_DIR . 'includes/class-abid-push-login.php';
 require_once ABID_DIR . 'includes/class-abid-ecosystem-sso.php';

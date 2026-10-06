@@ -15,6 +15,13 @@ class ABID_Login_UI {
 		add_action( 'wp_enqueue_scripts', array( $this, 'register_assets' ) );
 		add_action( 'login_enqueue_scripts', array( $this, 'enqueue_login_assets' ) );
 		add_filter( 'login_message', array( $this, 'login_message' ) );
+		add_action( 'wp_ajax_abid_session_check', array( $this, 'session_check' ) );
+		add_action( 'wp_ajax_nopriv_abid_session_check', array( $this, 'session_check' ) );
+	}
+
+	public function session_check() {
+		nocache_headers();
+		wp_send_json( array( 'logged_in' => is_user_logged_in() ) );
 	}
 
 	public function register_assets() {
@@ -57,6 +64,7 @@ class ABID_Login_UI {
 			'ABIDLogin',
 			array(
 				'api'      => esc_url_raw( rest_url( ABID_REST::NS ) ),
+				'sessionCheck' => esc_url_raw( admin_url( 'admin-ajax.php?action=abid_session_check' ) ),
 				'redirect' => esc_url_raw( $redirect ),
 				'country'  => ABID_Settings::get( 'default_phone_country', 'GH' ),
 				'i18n'     => array(
@@ -66,6 +74,7 @@ class ABID_Login_UI {
 					'verifying'     => __( 'Checking code...', 'abibitumi-id' ),
 					'sent'          => __( 'Code sent. Enter it below.', 'abibitumi-id' ),
 					'ready'         => __( 'You are signed in.', 'abibitumi-id' ),
+					'notSignedIn'   => __( 'Your code was accepted, but sign-in did not complete. Please retry or contact support.', 'abibitumi-id' ),
 					'tryAgain'      => __( 'Try again.', 'abibitumi-id' ),
 				),
 			)

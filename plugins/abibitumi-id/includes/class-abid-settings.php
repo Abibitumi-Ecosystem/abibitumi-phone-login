@@ -15,6 +15,10 @@ class ABID_Settings {
 	public static function defaults() {
 		return array(
 			'sms_provider'        => 'log',
+			'twilio_fallback_enabled' => 0,
+			'twilio_account_sid'  => '',
+			'twilio_api_key_sid'  => '',
+			'twilio_api_key_secret' => '',
 			'twilio_sid'          => '',
 			'twilio_token'        => '',
 			'twilio_from'         => '',
@@ -24,7 +28,7 @@ class ABID_Settings {
 			'hubtel_client_id'    => '',
 			'hubtel_client_secret' => '',
 			'hubtel_from'         => 'ABIBITUMI',
-			'hubtel_endpoint'     => 'https://devp-sms03726-api.hubtel.com/v1/messages/send',
+			'hubtel_endpoint'     => 'https://smsc.hubtel.com/v1/messages/send',
 			'vonage_key'          => '',
 			'vonage_secret'       => '',
 			'vonage_from'         => 'Abibitumi',
@@ -60,7 +64,13 @@ class ABID_Settings {
 
 	public static function all() {
 		$stored = get_option( self::OPTION_KEY, array() );
-		return wp_parse_args( is_array( $stored ) ? $stored : array(), self::defaults() );
+		$settings = wp_parse_args( is_array( $stored ) ? $stored : array(), self::defaults() );
+		// The older developer-portal endpoint is not the SMSC URL that serves the
+		// Hubtel account's successfully tested clientid/clientsecret request.
+		if ( 'https://devp-sms03726-api.hubtel.com/v1/messages/send' === $settings['hubtel_endpoint'] ) {
+			$settings['hubtel_endpoint'] = 'https://smsc.hubtel.com/v1/messages/send';
+		}
+		return $settings;
 	}
 
 	public static function get( $key, $default = null ) {

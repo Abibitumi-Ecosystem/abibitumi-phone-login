@@ -46,24 +46,28 @@ class ABID_Admin {
 					</tr>
 					<tr><th scope="row"><?php esc_html_e( 'Hubtel', 'abibitumi-id' ); ?></th><td>
 						<input class="regular-text" name="hubtel_client_id" placeholder="Client ID" value="<?php echo esc_attr( $s['hubtel_client_id'] ); ?>"><br>
-						<input class="regular-text" name="hubtel_client_secret" placeholder="Client Secret" type="password" value="<?php echo esc_attr( $s['hubtel_client_secret'] ); ?>"><br>
+						<input class="regular-text" name="hubtel_client_secret" placeholder="Client Secret (saved value is hidden; leave blank to keep)" type="password" value=""><br>
 						<input class="regular-text" name="hubtel_from" placeholder="Sender ID" maxlength="11" value="<?php echo esc_attr( $s['hubtel_from'] ); ?>"><br>
 						<input class="regular-text" name="hubtel_endpoint" placeholder="Endpoint" value="<?php echo esc_attr( $s['hubtel_endpoint'] ); ?>">
 						<p class="description"><?php esc_html_e( 'Best Ghana-first option. Sender ID must be approved by Hubtel and no more than 11 characters.', 'abibitumi-id' ); ?></p>
 					</td></tr>
 					<tr><th scope="row"><?php esc_html_e( 'Twilio', 'abibitumi-id' ); ?></th><td>
-						<input class="regular-text" name="twilio_sid" placeholder="Account SID" value="<?php echo esc_attr( $s['twilio_sid'] ); ?>"><br>
-						<input class="regular-text" name="twilio_token" placeholder="Auth token" type="password" value="<?php echo esc_attr( $s['twilio_token'] ); ?>"><br>
-						<input class="regular-text" name="twilio_from" placeholder="From" value="<?php echo esc_attr( $s['twilio_from'] ); ?>">
+						<input class="regular-text" name="twilio_account_sid" placeholder="Account SID (AC…)" value="<?php echo esc_attr( $s['twilio_account_sid'] ? $s['twilio_account_sid'] : $s['twilio_sid'] ); ?>"><br>
+						<input class="regular-text" name="twilio_api_key_sid" placeholder="API Key SID (SK…)" value="<?php echo esc_attr( $s['twilio_api_key_sid'] ); ?>"><br>
+						<input class="regular-text" name="twilio_api_key_secret" placeholder="API Key secret (enter once; stored privately)" type="password" value=""><br>
+						<input class="regular-text" name="twilio_token" placeholder="Legacy Auth token (optional; leave blank to keep saved value)" type="password" value=""><br>
+						<input class="regular-text" name="twilio_from" placeholder="Twilio number (+…) or Messaging Service SID (MG…)" value="<?php echo esc_attr( $s['twilio_from'] ); ?>"><br>
+						<label><input type="checkbox" name="twilio_fallback_enabled" value="1" <?php checked( $s['twilio_fallback_enabled'] ); ?>> <?php esc_html_e( 'Use Twilio for non-Ghana numbers and when Hubtel delivery fails', 'abibitumi-id' ); ?></label>
+						<p class="description"><?php esc_html_e( 'Use a Twilio API key SID and secret, Account SID, and a Twilio sender or Messaging Service SID. Saved secrets are not shown again. The fallback only applies when Hubtel is the primary provider.', 'abibitumi-id' ); ?></p>
 					</td></tr>
 					<tr><th scope="row"><?php esc_html_e( "Africa's Talking", 'abibitumi-id' ); ?></th><td>
 						<input class="regular-text" name="africastalking_user" placeholder="Username" value="<?php echo esc_attr( $s['africastalking_user'] ); ?>"><br>
-						<input class="regular-text" name="africastalking_key" placeholder="API key" type="password" value="<?php echo esc_attr( $s['africastalking_key'] ); ?>"><br>
+						<input class="regular-text" name="africastalking_key" placeholder="API key (saved value is hidden; leave blank to keep)" type="password" value=""><br>
 						<input class="regular-text" name="africastalking_from" placeholder="From" value="<?php echo esc_attr( $s['africastalking_from'] ); ?>">
 					</td></tr>
 					<tr><th scope="row"><?php esc_html_e( 'Vonage', 'abibitumi-id' ); ?></th><td>
 						<input class="regular-text" name="vonage_key" placeholder="API key" value="<?php echo esc_attr( $s['vonage_key'] ); ?>"><br>
-						<input class="regular-text" name="vonage_secret" placeholder="API secret" type="password" value="<?php echo esc_attr( $s['vonage_secret'] ); ?>"><br>
+						<input class="regular-text" name="vonage_secret" placeholder="API secret (saved value is hidden; leave blank to keep)" type="password" value=""><br>
 						<input class="regular-text" name="vonage_from" placeholder="From" value="<?php echo esc_attr( $s['vonage_from'] ); ?>">
 					</td></tr>
 					<tr><th scope="row"><?php esc_html_e( 'OTP policy', 'abibitumi-id' ); ?></th><td>
@@ -81,14 +85,14 @@ class ABID_Admin {
 						<p class="description"><?php esc_html_e( 'First login still requires phone verification. After that, app clients can register a Firebase token and approve future sign-ins by push notification.', 'abibitumi-id' ); ?></p>
 						<input class="regular-text" name="firebase_project_id" placeholder="Firebase project ID" value="<?php echo esc_attr( $s['firebase_project_id'] ); ?>"><br>
 						<input class="regular-text" name="firebase_client_email" placeholder="Firebase service account client email" value="<?php echo esc_attr( $s['firebase_client_email'] ); ?>"><br>
-						<textarea class="large-text code" name="firebase_private_key" rows="5" placeholder="Firebase service account private key"><?php echo esc_textarea( $s['firebase_private_key'] ); ?></textarea>
+						<textarea class="large-text code" name="firebase_private_key" rows="5" placeholder="Firebase service account private key (saved value is hidden; leave blank to keep)"></textarea>
 						<p class="description"><?php esc_html_e( 'Store a Firebase service account for Cloud Messaging only. Keep this key private.', 'abibitumi-id' ); ?></p>
 					</td></tr>
 					<tr><th scope="row"><?php esc_html_e( 'Ecosystem sign-in', 'abibitumi-id' ); ?></th><td>
 						<label><input type="checkbox" name="ecosystem_sso_enabled" value="1" <?php checked( $s['ecosystem_sso_enabled'] ); ?>> <?php esc_html_e( 'Allow Abibitumi ID sign-in across ecosystem sites', 'abibitumi-id' ); ?></label><br>
 						<label><?php esc_html_e( 'Identity provider URL', 'abibitumi-id' ); ?> <input class="regular-text" name="ecosystem_identity_url" value="<?php echo esc_attr( $s['ecosystem_identity_url'] ); ?>"></label><br>
 						<label><?php esc_html_e( 'Site slug', 'abibitumi-id' ); ?> <input class="regular-text" name="ecosystem_site_slug" placeholder="abibitumi" value="<?php echo esc_attr( $s['ecosystem_site_slug'] ); ?>"></label><br>
-						<label><?php esc_html_e( 'Shared SSO secret', 'abibitumi-id' ); ?> <input class="regular-text" name="ecosystem_sso_secret" type="password" value="<?php echo esc_attr( $s['ecosystem_sso_secret'] ); ?>"></label>
+						<label><?php esc_html_e( 'Shared SSO secret', 'abibitumi-id' ); ?> <input class="regular-text" name="ecosystem_sso_secret" type="password" placeholder="Saved value is hidden; leave blank to keep" value=""></label>
 						<p class="description"><?php esc_html_e( 'Use the same long random secret on Abibitumi.com and every trusted sister site that accepts Abibitumi ID.', 'abibitumi-id' ); ?></p>
 						<label for="ecosystem_allowed_return_hosts"><?php esc_html_e( 'Allowed ecosystem domains', 'abibitumi-id' ); ?></label><br>
 						<textarea id="ecosystem_allowed_return_hosts" name="ecosystem_allowed_return_hosts" class="large-text code" rows="4"><?php echo esc_textarea( $s['ecosystem_allowed_return_hosts'] ); ?></textarea>
@@ -126,21 +130,26 @@ class ABID_Admin {
 		}
 		check_admin_referer( 'abid_settings' );
 		$input = wp_unslash( $_POST );
+		$current = ABID_Settings::all();
 		ABID_Settings::update(
 			array(
 				'sms_provider'        => sanitize_key( $input['sms_provider'] ?? 'log' ),
-				'twilio_sid'          => sanitize_text_field( $input['twilio_sid'] ?? '' ),
-				'twilio_token'        => sanitize_text_field( $input['twilio_token'] ?? '' ),
+				'twilio_fallback_enabled' => empty( $input['twilio_fallback_enabled'] ) ? 0 : 1,
+				'twilio_account_sid'  => sanitize_text_field( $input['twilio_account_sid'] ?? '' ),
+				'twilio_api_key_sid'  => sanitize_text_field( $input['twilio_api_key_sid'] ?? '' ),
+				'twilio_api_key_secret' => $this->secret_input( $input, 'twilio_api_key_secret', $current ),
+				'twilio_sid'          => sanitize_text_field( $input['twilio_account_sid'] ?? ( $input['twilio_sid'] ?? '' ) ),
+				'twilio_token'        => $this->secret_input( $input, 'twilio_token', $current ),
 				'twilio_from'         => sanitize_text_field( $input['twilio_from'] ?? '' ),
 				'africastalking_user' => sanitize_text_field( $input['africastalking_user'] ?? '' ),
-				'africastalking_key'  => sanitize_text_field( $input['africastalking_key'] ?? '' ),
+				'africastalking_key'  => $this->secret_input( $input, 'africastalking_key', $current ),
 				'africastalking_from' => sanitize_text_field( $input['africastalking_from'] ?? '' ),
 				'hubtel_client_id'    => sanitize_text_field( $input['hubtel_client_id'] ?? '' ),
-				'hubtel_client_secret' => sanitize_text_field( $input['hubtel_client_secret'] ?? '' ),
+				'hubtel_client_secret' => $this->secret_input( $input, 'hubtel_client_secret', $current ),
 				'hubtel_from'         => substr( sanitize_text_field( $input['hubtel_from'] ?? 'ABIBITUMI' ), 0, 11 ),
-				'hubtel_endpoint'     => esc_url_raw( $input['hubtel_endpoint'] ?? 'https://devp-sms03726-api.hubtel.com/v1/messages/send' ),
+				'hubtel_endpoint'     => esc_url_raw( $input['hubtel_endpoint'] ?? 'https://smsc.hubtel.com/v1/messages/send' ),
 				'vonage_key'          => sanitize_text_field( $input['vonage_key'] ?? '' ),
-				'vonage_secret'       => sanitize_text_field( $input['vonage_secret'] ?? '' ),
+				'vonage_secret'       => $this->secret_input( $input, 'vonage_secret', $current ),
 				'vonage_from'         => sanitize_text_field( $input['vonage_from'] ?? '' ),
 				'otp_ttl_minutes'     => max( 1, absint( $input['otp_ttl_minutes'] ?? 10 ) ),
 				'default_phone_country' => strtoupper( substr( sanitize_key( $input['default_phone_country'] ?? 'GH' ), 0, 2 ) ) ?: 'GH',
@@ -151,11 +160,11 @@ class ABID_Admin {
 				'push_login_enabled'  => empty( $input['push_login_enabled'] ) ? 0 : 1,
 				'firebase_project_id' => sanitize_text_field( $input['firebase_project_id'] ?? '' ),
 				'firebase_client_email' => sanitize_email( $input['firebase_client_email'] ?? '' ),
-				'firebase_private_key' => sanitize_textarea_field( $input['firebase_private_key'] ?? '' ),
+				'firebase_private_key' => $this->secret_textarea_input( $input, 'firebase_private_key', $current ),
 				'ecosystem_sso_enabled' => empty( $input['ecosystem_sso_enabled'] ) ? 0 : 1,
 				'ecosystem_identity_url' => esc_url_raw( $input['ecosystem_identity_url'] ?? 'https://abibitumi.com' ),
 				'ecosystem_site_slug' => sanitize_key( $input['ecosystem_site_slug'] ?? '' ),
-				'ecosystem_sso_secret' => sanitize_text_field( $input['ecosystem_sso_secret'] ?? '' ),
+				'ecosystem_sso_secret' => $this->secret_input( $input, 'ecosystem_sso_secret', $current ),
 				'ecosystem_allowed_return_hosts' => implode( "\n", $this->parse_host_list( $input['ecosystem_allowed_return_hosts'] ?? '' ) ),
 				'ecosystem_auto_create_users' => empty( $input['ecosystem_auto_create_users'] ) ? 0 : 1,
 				'buddyboss_phone_field_id' => absint( $input['buddyboss_phone_field_id'] ?? 0 ),
@@ -170,6 +179,20 @@ class ABID_Admin {
 		);
 		wp_safe_redirect( add_query_arg( array( 'page' => 'abibitumi-id', 'updated' => '1' ), admin_url( 'options-general.php' ) ) );
 		exit;
+	}
+
+	private function secret_input( array $input, $key, array $current ) {
+		if ( ! isset( $input[ $key ] ) || '' === trim( (string) $input[ $key ] ) ) {
+			return isset( $current[ $key ] ) ? $current[ $key ] : '';
+		}
+		return sanitize_text_field( $input[ $key ] );
+	}
+
+	private function secret_textarea_input( array $input, $key, array $current ) {
+		if ( ! isset( $input[ $key ] ) || '' === trim( (string) $input[ $key ] ) ) {
+			return isset( $current[ $key ] ) ? $current[ $key ] : '';
+		}
+		return sanitize_textarea_field( $input[ $key ] );
 	}
 
 	private function parse_host_list( $value ) {
